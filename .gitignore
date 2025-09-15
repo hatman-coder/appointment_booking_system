@@ -1,6 +1,8 @@
 # PyCharm files
 .idea/
 
+#vscode files
+.vscode
 
 *.txt
 # Virtual environment
