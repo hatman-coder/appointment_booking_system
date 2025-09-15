@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+{% load static %}
+<html>
+    <head>
+        {% block head %}
+        <title>{{ title|default:"Swagger" }}</title>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        {% if favicon_href %}
+        <link rel="icon" href="{{ favicon_href }}">
+        {% endif %}
+        <link rel="stylesheet" href="{{ swagger_ui_css }}">
+        <link rel="stylesheet" href="{% static 'css/swagger.css' %}">
+        {% endblock head %}
+    </head>
+    <body>
+        {% block body %}
+        <div id="swagger-ui"></div>
+            <button class="toggle-dark-mode" onclick="toggleDarkMode()">
+                <img src="{% static 'images/dark_mode.png' %}" alt="Dark Mode">
+                <span class="text">Dark Mode</span>
+            </button>
+            <!-- Button to toggle dark mode -->
+        <script>
+            // Function to toggle dark mode and update button text
+            function toggleDarkMode() {
+                var button = document.querySelector('.toggle-dark-mode');
+                var text = button.querySelector('.text');
+                // Toggle the 'dark-mode' class on body
+                document.body.classList.toggle('dark-mode');
+                // Toggle the text content of the button between 'On' and 'Off'
+                if (document.body.classList.contains('dark-mode')) {
+                    text.textContent = 'Dark';
+                    text.style.color = '#66ccff';
+                } else {
+                    text.textContent = 'Light';
+                    text.style.color = '#333333';
+                }
+                // Save user preference to local storage
+                localStorage.setItem('darkMode', document.body.classList.contains('dark-mode'));
+            }
+
+            // Check if dark mode preference is stored in localStorage
+            const isDarkMode = localStorage.getItem('darkMode') === 'true';
+            // If dark mode preference exists, apply it
+            if (isDarkMode) {
+                document.body.classList.add('dark-mode');
+            }
+
+            // Update button text based on the initial state of dark mode
+            var button = document.querySelector('.toggle-dark-mode');
+            var text = button.querySelector('.text');
+            if (document.body.classList.contains('dark-mode')) {
+                text.textContent = 'Dark';
+                text.style.color = '#66ccff';
+            } else {
+                text.textContent = 'Light';
+                text.style.color = '#333333';
+            }
+
+        </script>
+        <script src="{{ swagger_ui_bundle }}"></script>
+        <script src="{{ swagger_ui_standalone }}"></script>
+        {% if script_url %}
+        <script src="{{ script_url }}"></script>
+        {% else %}
+        <script>
+            {% include template_name_js %}
+        </script>
+        {% endif %}
+        {% endblock %}
+    </body>
+</html>

@@ -1,0 +1,341 @@
+ html { box-sizing: border-box; overflow-y: scroll; }
+            *, *:after, *:before { box-sizing: inherit; }
+            @import url('https://fonts.googleapis.com/css2?family='Poppins', sans-serif:wght@700&display=swap');
+
+            body {
+              background: #ffffff; /* Default light mode background */
+              margin: 0;
+              color: white; /* Default light mode text color */
+              position: relative;
+            }
+            /* Additional CSS for dark mode */
+
+            .dark-mode {
+                  background: #192734; /* Dark mode background */
+                  color: white; /* Dark mode text color */
+
+              .swagger-ui .info .title {
+                    color: white;
+                    font-family: 'Poppins', sans-serif;
+                    font-size: 36px;
+                    margin: 0;
+                }
+              .swagger-ui .renderedMarkdown p{
+                    color: white;
+                }
+              .swagger-ui section h3{
+                  color: white;
+                }
+              .swagger-ui .scheme-container {
+                    background:  #192734;
+                    box-shadow: 0 1px 2px 0 rgba(0,0,0,.15);
+                    margin: 0 0 20px;
+                    padding: 30px 0;
+                }
+            .swagger-ui .model-box-control:focus, .swagger-ui .models-control:focus, .swagger-ui .opblock-summary-control:focus {
+                    outline: none!important;
+                }
+              .swagger-ui a.nostyle, .swagger-ui a.nostyle:visited {
+                    color: white;
+                    cursor: pointer;
+                    text-decoration: inherit;
+                }
+              .swagger-ui .opblock.opblock-post .opblock-summary-method {
+                    background: seagreen;
+                }
+              .swagger-ui .opblock.opblock-delete .opblock-summary-method {
+                    background: #C21807;
+                }
+              .swagger-ui .opblock.opblock-get .opblock-summary-method {
+                    background: darkcyan;
+                }
+              .swagger-ui .opblock.opblock-put .opblock-summary-method {
+                    background: salmon;
+                }
+              .swagger-ui .opblock.opblock-patch .opblock-summary-method {
+                    background: lightcoral;
+                }
+              .swagger-ui .parameter__name {
+                    color: white;
+                    font-family: sans-serif;
+                    font-size: 16px;
+                    font-weight: 400;
+                    margin-right: 0.75em;
+                }
+              .swagger-ui .parameter__type {
+                    color: white;
+                    font-family: monospace;
+                    font-size: 12px;
+                    font-weight: 600;
+                    padding: 5px 0;
+                }
+              .swagger-ui .parameter__extension, .swagger-ui .parameter__in {
+                    color: lightgray;
+                    font-family: monospace;
+                    font-size: 12px;
+                    font-style: italic;
+                    font-weight: 600;
+                }
+              .swagger-ui .opblock-description-wrapper p, .swagger-ui .opblock-external-docs-wrapper p, .swagger-ui .opblock-title_normal p {
+                  color: white;
+                  font-family: sans-serif;
+                  font-size: 14px;
+                  margin: 0;
+                }
+              .swagger-ui .opblock .opblock-section-header h4 {#666666
+                  color: white;
+                  flex: 1;
+                  font-family: sans-serif;
+                  font-size: 14px;
+                  margin: 0;
+                }
+              .swagger-ui .responses-inner h4, .swagger-ui .responses-inner h5 {
+                  color: white;
+                  font-family: sans-serif;
+                  font-size: 12px;
+                  margin: 10px 0 5px;
+                }
+              .swagger-ui .opblock .opblock-section-header {
+                  align-items: center;
+                  background: #15202B;
+                  box-shadow: 0 1px 2px rgba(0,0,0,.1);
+                  display: flex;
+                  min-height: 50px;
+                  padding: 8px 20px;
+                 }
+              .swagger-ui .parameter__name.required:after {
+                color: darkturquoise;
+                content: "required";
+                font-size: 10px;
+                padding: 5px;
+                position: relative;
+                top: -6px;
+                }
+              .swagger-ui .opblock-body pre.microlight {
+                  background: #282828 !important;
+                  border-radius: 4px;
+                  font-size: 12px;
+                  -webkit-hyphens: auto;
+                  hyphens: auto;
+                  margin: 0;
+                  padding: 10px;
+                  white-space: pre-wrap;
+                  word-break: break-all;
+                  word-break: break-word;
+                  word-wrap: break-word;
+                  color: #fff;
+                  font-family: 'Poppins', sans-serif;
+                  font-weight: 600;
+                }
+              .swagger-ui .btn {
+                  background: transparent;
+                  border: 2px solid gray;
+                  border-radius: 4px;
+                  box-shadow: 0 1px 2px rgba(0,0,0,.1);
+                  color: white;
+                  font-family: 'Poppins', sans-serif;
+                  font-size: 14px;
+                  font-weight: 700;
+                  padding: 5px 23px;
+                  transition: all .3s;
+                }
+              .swagger-ui .response-col_status {
+                color: white;
+                font-family: s'Poppins', sans-serif;
+                font-size: 14px;
+                }
+              .swagger-ui table thead tr td, .swagger-ui table thead tr th {
+                border-bottom: 1px solid rgba(59, 65, 81, .2);
+                color: white;
+                font-family: 'Poppins', sans-serif;
+                font-size: 12px;
+                font-weight: 700;
+                padding: 12px 0;
+                text-align: left;
+                }
+              .swagger-ui .response-col_links {
+                color: white;
+                font-family: 'Poppins', sans-serif;
+                font-size: 14px;
+                max-width: 40em;
+                padding-left: 2em;
+                }
+              .swagger-ui {
+                color: white;
+                font-family: 'Poppins', sans-serif /*! normalize.css v7.0.0 | MIT License | github.com/necolas/normalize.css */;
+                }
+              .swagger-ui button {
+                cursor: pointer;
+                background-color: inherit;
+                color: white;
+                fill: white;
+                }
+              .swagger-ui .authorization__btn {
+                background: none;
+                border: none;
+                padding: 0 0 0 10px;
+                fill: white !important;
+                }
+              .swagger-ui .opblock-control-arrow {
+                background: transparent !important;
+                border: none;
+                text-align: center;
+                fill: white !important;
+                }
+              .swagger-ui .expand-methods, .swagger-ui .expand-operation {
+                background: transparent;
+                border: none;
+                fill: white;
+                }
+              .swagger-ui .tab li button.tablinks {
+                background: none;
+                border: 0;
+                color: white;
+                font-family: inherit;
+                font-weight: inherit;
+                padding: 0;
+                }
+              .swagger-ui .response-control-media-type__accept-message {
+                  color: lightgreen;
+                  font-size: .7em;
+                }
+              .swagger-ui .model {
+                  color: white;
+                  font-family: 'Poppins', sans-serif;
+                  font-size: 12px;
+                  font-weight: 300;
+                  font-weight: 600;
+                }
+              .swagger-ui .model-title {
+                  color: white;
+                  font-family: 'Poppins', sans-serif;
+                  font-size: 16px;
+                }
+              .swagger-ui .dialog-ux .modal-ux {
+                  background: #192734;
+                  border: 1px solid #ebebeb;
+                  border-radius: 4px;
+                  box-shadow: 0 10px 30px 0 rgba(0,0,0,.2);
+                  left: 50%;
+                  max-width: 650px;
+                  min-width: 300px;
+                  position: absolute;
+                  top: 50%;
+                  transform: translate(-50%, -50%);
+                  width: 100%;
+                  z-index: 9999;
+                }
+              .swagger-ui .dialog-ux .modal-ux-header h3 {
+                  color: white;
+                  flex: 1;
+                  font-family: 'Poppins', sans-serif;
+                  font-size: 20px;
+                  font-weight: 600;
+                  margin: 0;
+                  padding: 0 20px;
+                }
+              .swagger-ui .dialog-ux .modal-ux-content h4 {
+                  color: white;
+                  font-family: sans-serif;
+                  font-size: 18px;
+                  font-weight: 600;
+                  margin: 15px 0 0;
+                }
+              .swagger-ui label {
+                  color: white;
+                  font-family: 'Poppins', sans-serif;
+                  font-size: 12px;
+                  font-weight: 700;
+                  margin: 0 0 5px;
+                }
+              .swagger-ui textarea {
+                  background: #15202B;
+                  border: none;
+                  border-radius: 4px;
+                  color: white;
+                  font-family: monospace;
+                  font-size: 12px;
+                  font-weight: 500;
+                  min-height: 280px;
+                  outline: none;
+                  padding: 10px;
+                  width: 100%;
+                }
+            }
+              .swagger-ui .opblock.opblock-post {
+                  background: rgba(73, 204, 144, .1);
+                  border-color: inherit;
+                }
+              .swagger-ui .opblock.opblock-post .opblock-summary {
+                  border-color: inherit;
+                }
+              .swagger-ui input[type=email], .swagger-ui input[type=file], .swagger-ui input[type=password], .swagger-ui input[type=search], .swagger-ui input[type=text], .swagger-ui textarea {
+                  background: #F3E5AB;
+                  border: 1px solid #d9d9d9;
+                  border-radius: 4px;
+                  margin: 5px 0;
+                  min-width: 100px;
+                  padding: 8px 10px;
+                  color: #000000;
+                }
+
+            /* Styling for the toggle button */
+
+            .toggle-dark-mode {
+                position: absolute;
+                top: 10px; /* Adjust as needed */
+                right: 20px; /* Adjust as needed */
+                padding: 0 20px;
+                min-width: 50px; /* Adjust this value as needed */
+                background-color: #5783db; /* Button color */
+                color: #66ccff; /* Button text color */
+                border: none;
+                border-radius: 5px;
+                cursor: pointer;
+                font-size: 16px;
+                text-align: left;
+                outline: none;
+                transition: background-color 0.3s ease;
+                font-family: 'Poppins', sans-serif;
+                /* Add glossy effect */
+                background: linear-gradient(to bottom, rgba(255, 255, 255, 0.3), rgba(255, 255, 255, 0));
+                box-shadow: inset 0 2px 3px rgba(255, 255, 255, 0.3);
+                display: flex;
+                align-items: center;
+            }
+
+            .toggle-dark-mode:hover {
+                background-color: #2980b9; /* Darker button color on hover */
+            }
+
+            .toggle-dark-mode img {
+                width: 24px; /* Adjust the width as needed */
+                height: auto;
+                margin-right: 5px;
+            }
+
+            .toggle-dark-mode .text {
+                margin-right: 5px; /* Adjust spacing between icon and text */
+            }
+
+            @media (prefers-color-scheme: dark) {
+                .toggle-dark-mode {
+                    color: #a6d9ff; /* Color for dark mode */
+                }
+            }
+            @media (max-width: 600px) {
+                .toggle-dark-mode {
+                    height: 20px;
+                    bottom: 10px;
+                    right: 10px;
+                    font-size: 14px;
+                }
+
+                .toggle-dark-mode img {
+                    width: 16px;
+                    margin-right: 3px;
+                }
+            }
+
+
+

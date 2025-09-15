@@ -1,0 +1,16 @@
+version: '3.8'
+
+services:
+  app:
+    container_name: django_app
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    volumes:
+      - './media:/code/media:rw'
+      - '/var/log/django/logs:/code/logs:rw'
+      - '/srv/www/django/static:/srv/www/django/static:rwx'
+      - '/srv/www/django/media:/srv/www/django/media:rwx'
+    ports:
+      - "8000:8000"

@@ -1,0 +1,12 @@
+SECRET_KEY=django-insecure-...........................
+
+# DATABASE CONFIG
+DB_ENGINE=django.db.backends.postgresql
+DB_HOST=localhost
+DB_PORT=5432
+DB_USER=postgres
+DB_PASSWORD=admin
+DB_NAME=test_db
+
+# Define if you are in production or not
+IN_PRODUCTION=False
