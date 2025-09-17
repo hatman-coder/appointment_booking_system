@@ -2,7 +2,7 @@
 .idea/
 
 #vscode files
-.vscode
+.vscode/
 
 *.txt
 # Virtual environment
