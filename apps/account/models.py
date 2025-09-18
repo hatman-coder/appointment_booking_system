@@ -1,9 +1,9 @@
-from core.models import BaseModel
 from django.contrib.auth.models import AbstractUser
 from django.db import models
-from core.enum import UserType
 
 from apps.location.models import District, Division, Thana
+from core.enum import UserType
+from core.models import BaseModel
 
 
 class User(AbstractUser, BaseModel):
@@ -86,7 +86,7 @@ class DoctorSchedule(BaseModel):
         db_table = "doctor_schedules"
 
     def __str__(self):
-        return f"{self.doctor.user.full_name} - {self.get_day_of_week_display()}"
+        return f"{self.doctor.user.full_name}"
 
 
 class Patient(BaseModel):

@@ -1,7 +1,6 @@
-from django.urls import path, include
-from django.conf import settings
-from django.conf.urls.static import static
+from django.urls import include, path
 from rest_framework_simplejwt.views import TokenRefreshView
+
 from . import views
 
 app_name = "users"
@@ -49,10 +48,4 @@ urlpatterns = [
     path("", include((doctor_patterns, "doctors"))),
     # Admin routes
     path("admin/", include((admin_patterns, "admin"))),
-]
-
-# Alternative URL patterns for different API versions (if needed in future)
-v1_patterns = [
-    # Version 1 API endpoints
-    path("v1/", include(urlpatterns)),
 ]

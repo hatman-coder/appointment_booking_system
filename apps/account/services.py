@@ -1,24 +1,24 @@
-import re
+import logging
 import os
+import re
 import uuid
-from datetime import datetime, timedelta
-from typing import Dict, Any, Optional, List, Tuple
+from datetime import datetime
+from typing import Any, Dict, List, Optional, Tuple
+
 from django.contrib.auth import authenticate
 from django.contrib.auth.hashers import make_password
-from django.core.files.storage import default_storage
 from django.core.files.base import ContentFile
+from django.core.files.storage import default_storage
 from django.db import transaction
-from django.conf import settings
-from rest_framework_simplejwt.tokens import RefreshToken
 from PIL import Image
-import logging
+from rest_framework_simplejwt.tokens import RefreshToken
 
-from .models import User
-from .selectors import UserSelector, DoctorSelector, PatientSelector
 from apps.appointment.selectors import AppointmentSelector
-
 from apps.location.selectors import LocationSelector
 from core.enum import UserType
+
+from .models import User
+from .selectors import DoctorSelector, PatientSelector, UserSelector
 
 logger = logging.getLogger(__name__)
 
@@ -124,7 +124,7 @@ class UserServices:
         return len(errors) == 0, errors
 
     @staticmethod
-    def process_profile_image(image_file, user_id: int) -> Optional[str]:
+    def process_profile_image(image_file, user_id: uuid) -> Optional[str]:
         """
         Process and save profile image
         Returns the file path or None if no image
@@ -396,7 +396,7 @@ class UserServices:
 
     @classmethod
     def update_user_profile(
-        cls, user_id: int, update_data: Dict[str, Any]
+        cls, user_id: uuid, update_data: Dict[str, Any]
     ) -> Dict[str, Any]:
         """
         Update user profile with validation
@@ -533,7 +533,7 @@ class UserServices:
 
     @staticmethod
     def change_password(
-        user_id: int, old_password: str, new_password: str
+        user_id: uuid, old_password: str, new_password: str
     ) -> Dict[str, Any]:
         """
         Change user password with validation
@@ -571,7 +571,7 @@ class UserServices:
             }
 
     @staticmethod
-    def get_user_dashboard_data(user_id: int) -> Dict[str, Any]:
+    def get_user_dashboard_data(user_id: uuid) -> Dict[str, Any]:
         """
         Get user-specific dashboard data based on user type
         """

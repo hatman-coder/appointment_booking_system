@@ -1,18 +1,19 @@
+import uuid
 from datetime import datetime, timedelta
-from typing import Optional
+from typing import Dict, List, Optional
 
 from django.db.models import Avg, Count, Q, QuerySet
 
-from .models import Doctor, DoctorSchedule, Patient, User
 from apps.appointment.models import Appointment
-from typing import List, Dict
+
+from .models import Doctor, DoctorSchedule, Patient, User
 
 
 class UserSelector:
     """Selector class for user-related queries"""
 
     @staticmethod
-    def get_user_by_id(user_id: int) -> Optional[User]:
+    def get_user_by_id(user_id: uuid) -> Optional[User]:
         """Get user by ID with location details"""
         try:
             return User.objects.select_related("division", "district", "thana").get(
@@ -62,7 +63,7 @@ class UserSelector:
 
     @staticmethod
     def get_users_by_location(
-        division_id: int = None, district_id: int = None, thana_id: int = None
+        division_id: uuid = None, district_id: uuid = None, thana_id: uuid = None
     ) -> QuerySet:
         """Get users by location"""
         queryset = User.objects.select_related("division", "district", "thana")
@@ -77,7 +78,7 @@ class UserSelector:
         return queryset.order_by("full_name")
 
     @staticmethod
-    def check_email_exists(email: str, exclude_id: int = None) -> bool:
+    def check_email_exists(email: str, exclude_id: uuid = None) -> bool:
         """Check if email already exists"""
         queryset = User.objects.filter(email=email)
         if exclude_id:
@@ -85,7 +86,7 @@ class UserSelector:
         return queryset.exists()
 
     @staticmethod
-    def check_mobile_exists(mobile_number: str, exclude_id: int = None) -> bool:
+    def check_mobile_exists(mobile_number: str, exclude_id: uuid = None) -> bool:
         """Check if mobile number already exists"""
         queryset = User.objects.filter(mobile_number=mobile_number)
         if exclude_id:
@@ -134,7 +135,7 @@ class DoctorSelector:
     """Selector class for doctor-related queries"""
 
     @staticmethod
-    def get_doctor_by_id(doctor_id: int) -> Optional[Doctor]:
+    def get_doctor_by_id(doctor_id: uuid) -> Optional[Doctor]:
         """Get doctor by ID with user and location details"""
         try:
             return Doctor.objects.select_related(
@@ -144,7 +145,7 @@ class DoctorSelector:
             return None
 
     @staticmethod
-    def get_doctor_by_user(user: User) -> Optional[Doctor]:
+    def get_doctor_by_user(user: uuid) -> Optional[Doctor]:
         """Get doctor by user"""
         try:
             return Doctor.objects.get(user=user)
@@ -164,7 +165,7 @@ class DoctorSelector:
 
     @staticmethod
     def get_doctor_available_slots(
-        doctor_id: int, date: datetime.date = datetime.now(), duration: int = 30
+        doctor_id: uuid, date: datetime.date = datetime.now(), duration: int = 30
     ) -> List[Dict]:
         """
         Get available time slots for a doctor on a specific date, excluding booked slots
@@ -273,7 +274,7 @@ class DoctorSelector:
 
     @staticmethod
     def get_doctors_by_location(
-        division_id: int = None, district_id: int = None, thana_id: int = None
+        division_id: uuid = None, district_id: uuid = None, thana_id: uuid = None
     ) -> QuerySet:
         """Get doctors by location"""
         queryset = Doctor.objects.select_related(
@@ -306,8 +307,8 @@ class DoctorSelector:
     @staticmethod
     def filter_doctors(
         specialization: str = None,
-        division_id: int = None,
-        district_id: int = None,
+        division_id: uuid = None,
+        district_id: uuid = None,
         min_experience: int = None,
         max_fee: int = None,
     ) -> QuerySet:
@@ -336,7 +337,7 @@ class DoctorSelector:
         return queryset.order_by("consultation_fee")
 
     @staticmethod
-    def get_doctor_schedule(doctor_id: int, day_of_week: int = None) -> QuerySet:
+    def get_doctor_schedule(doctor_id: uuid, day_of_week: int = None) -> QuerySet:
         """Get doctor's schedule"""
         queryset = DoctorSchedule.objects.filter(
             doctor_id=doctor_id, is_active=True
@@ -356,13 +357,13 @@ class DoctorSelector:
             )
             .annotate(
                 total_appointments=Count("appointments"),
-                avg_rating=Avg("appointments__rating"),  # if you add rating field later
+                avg_rating=Avg("appointments__rating"),
             )
             .order_by("-total_appointments")
         )
 
     @staticmethod
-    def check_license_exists(license_number: str, exclude_id: int = None) -> bool:
+    def check_license_exists(license_number: str, exclude_id: uuid = None) -> bool:
         """Check if license number already exists"""
         queryset = Doctor.objects.filter(license_number=license_number)
         if exclude_id:
@@ -378,7 +379,7 @@ class PatientSelector:
     """Selector class for patient-related queries"""
 
     @staticmethod
-    def get_patient_by_id(patient_id: int) -> Optional[Patient]:
+    def get_patient_by_id(patient_id: uuid) -> Optional[Patient]:
         """Get patient by ID with user details"""
         try:
             return Patient.objects.select_related(
@@ -388,7 +389,7 @@ class PatientSelector:
             return None
 
     @staticmethod
-    def get_patient_by_user(user: User) -> Optional[Patient]:
+    def get_patient_by_user(user: uuid) -> Optional[Patient]:
         """Get patient by user"""
         try:
             return Patient.objects.get(user=user)
