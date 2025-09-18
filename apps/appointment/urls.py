@@ -9,20 +9,22 @@ appointment_patterns = [
     path("book/", views.book_appointment, name="book_appointment"),
     path("", views.get_user_appointments, name="user_appointments"),
     path(
-        "<int:appointment_id>/", views.get_appointment_detail, name="appointment_detail"
+        "<uuid:appointment_id>/",
+        views.get_appointment_detail,
+        name="appointment_detail",
     ),
     path(
-        "<int:appointment_id>/status/",
+        "<uuid:appointment_id>/status/",
         views.update_appointment_status,
         name="update_status",
     ),
     path(
-        "<int:appointment_id>/reschedule/",
+        "<uuid:appointment_id>/reschedule/",
         views.reschedule_appointment,
         name="reschedule",
     ),
     path(
-        "<int:appointment_id>/cancel/", views.cancel_appointment, name="cancel"
+        "<uuid:appointment_id>/cancel/", views.cancel_appointment, name="cancel"
     ),  # Alternative to DELETE
 ]
 
@@ -33,10 +35,10 @@ schedule_patterns = [
         "schedule/", views.get_doctor_schedule, name="own_schedule"
     ),  # Doctor's own schedule
     path(
-        "schedule/<int:doctor_id>/", views.get_doctor_schedule, name="doctor_schedule"
+        "schedule/<uuid:doctor_id>/", views.get_doctor_schedule, name="doctor_schedule"
     ),
     path(
-        "available-slots/<int:doctor_id>/",
+        "available-slots/<uuid:doctor_id>/",
         views.get_available_slots,
         name="available_slots",
     ),
@@ -49,7 +51,7 @@ history_patterns = [
         "history/", views.get_patient_history, name="own_history"
     ),  # Patient's own history
     path(
-        "history/<int:patient_id>/", views.get_patient_history, name="patient_history"
+        "history/<uuid:patient_id>/", views.get_patient_history, name="patient_history"
     ),
     path(
         "statistics/", views.get_appointment_statistics, name="appointment_statistics"
@@ -77,6 +79,6 @@ urlpatterns = [
 # Alternative: RESTful DELETE endpoint for cancellation
 urlpatterns += [
     path(
-        "<int:appointment_id>/", views.cancel_appointment, name="delete_appointment"
+        "<uuid:appointment_id>/", views.cancel_appointment, name="delete_appointment"
     ),  # DELETE method
 ]

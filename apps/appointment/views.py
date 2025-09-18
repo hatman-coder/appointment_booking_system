@@ -1,9 +1,6 @@
-import json
 import logging
 from datetime import date, datetime, timedelta
 
-from account.models import User
-from django.http import JsonResponse
 from django.utils import timezone
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
@@ -13,6 +10,7 @@ from rest_framework.response import Response
 from .models import Appointment
 from .selectors import AppointmentSelector
 from .services import AppointmentServices
+from core.enum import UserType
 
 logger = logging.getLogger(__name__)
 
@@ -79,16 +77,6 @@ def book_appointment(request):
             return standardize_response(
                 False,
                 "Doctor ID, appointment date, and time are required",
-                status_code=status.HTTP_400_BAD_REQUEST,
-            )
-
-        # Convert doctor_id to int
-        try:
-            appointment_data["doctor_id"] = int(appointment_data["doctor_id"])
-        except (ValueError, TypeError):
-            return standardize_response(
-                False,
-                "Invalid doctor ID format",
                 status_code=status.HTTP_400_BAD_REQUEST,
             )
 

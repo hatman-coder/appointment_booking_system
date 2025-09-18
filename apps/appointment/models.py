@@ -2,15 +2,10 @@ from core.models import BaseModel
 from django.db import models
 
 from apps.account.models import Doctor, Patient
+from core.enum import AppointmentStatus
 
 
 class Appointment(BaseModel):
-    STATUS_CHOICES = [
-        ("pending", "Pending"),
-        ("confirmed", "Confirmed"),
-        ("cancelled", "Cancelled"),
-        ("completed", "Completed"),
-    ]
 
     patient = models.ForeignKey(
         Patient, on_delete=models.CASCADE, related_name="appointments"
@@ -20,7 +15,11 @@ class Appointment(BaseModel):
     )
     appointment_date = models.DateField()
     appointment_time = models.TimeField()
-    status = models.CharField(max_length=15, choices=STATUS_CHOICES, default="pending")
+    status = models.CharField(
+        max_length=15,
+        choices=AppointmentStatus.choices(),
+        default=AppointmentStatus.PENDING,
+    )
     notes = models.TextField(blank=True)
     symptoms = models.TextField(blank=True)
     prescription = models.TextField(blank=True)

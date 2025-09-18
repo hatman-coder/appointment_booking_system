@@ -3,13 +3,14 @@ from datetime import datetime, time, timedelta
 from decimal import Decimal
 from typing import Any, Dict, List, Optional, Tuple
 
-from account.models import User
-from django.conf import settings
 from django.db import transaction
 from django.utils import timezone
 
 from .models import Appointment
 from .selectors import AppointmentSelector
+from core.enum import UserType, AppointmentStatus
+from apps.account.models import DoctorSchedule
+from apps.account.selectors import PatientSelector, DoctorSelector
 
 logger = logging.getLogger(__name__)
 
@@ -101,34 +102,34 @@ class AppointmentServices:
         doctor_id: int, appointment_datetime: datetime
     ) -> Tuple[bool, str]:
         """
-        Check if doctor is available at the requested time
+        Check if doctor is available at the requested time based on their schedule
         """
         doctor = AppointmentSelector.get_doctor_by_id(doctor_id)
         if not doctor:
             return False, "Doctor not found"
 
-        # Check doctor's available timeslots
+        # Get the day of week and time from appointment datetime
+        appointment_day = appointment_datetime.weekday()
         appointment_time = appointment_datetime.time()
-        appointment_weekday = appointment_datetime.weekday()
 
-        # Check if the appointment time falls within any of the doctor's available timeslots
-        if not hasattr(doctor, "available_timeslots") or not doctor.available_timeslots:
-            return False, "Doctor has no available timeslots"
+        # Check if doctor has a schedule for this day
+        doctor_schedule = DoctorSchedule.objects.filter(
+            doctor_id=doctor_id, day_of_week=appointment_day, is_active=True
+        ).first()
 
-        time_slot_available = False
-        for timeslot in doctor.available_timeslots:
-            try:
-                start_time, end_time = AppointmentServices.parse_timeslot(timeslot)
-                if start_time <= appointment_time < end_time:
-                    time_slot_available = True
-                    break
-            except AppointmentValidationError:
-                continue
-
-        if not time_slot_available:
+        if not doctor_schedule:
             return (
                 False,
-                f"Doctor is not available at {appointment_time.strftime('%H:%M')}",
+                f"Doctor does not work on {dict(DoctorSchedule.DAYS_OF_WEEK)[appointment_day]}",
+            )
+
+        # Check if appointment time falls within schedule hours
+        if not (
+            doctor_schedule.start_time <= appointment_time <= doctor_schedule.end_time
+        ):
+            return (
+                False,
+                f"Doctor's working hours are {doctor_schedule.start_time.strftime('%H:%M')} to {doctor_schedule.end_time.strftime('%H:%M')}",
             )
 
         # Check for existing appointments at the same time
@@ -193,11 +194,11 @@ class AppointmentServices:
                     )
 
                 # Validate patient exists and is a patient
-                patient = AppointmentSelector.get_user_by_id(patient_id)
+                patient = PatientSelector.get_patient_by_user(patient_id)
                 if not patient:
                     raise AppointmentValidationError("Patient not found")
 
-                if patient.user_type != UserType.PATIENT.value:
+                if patient.user.user_type != UserType.PATIENT.value:
                     raise AppointmentValidationError(
                         "Only patients can book appointments"
                     )
@@ -277,12 +278,11 @@ class AppointmentServices:
                     appointment_date=appointment_date,
                     appointment_time=appointment_time,
                     notes=notes,
-                    status=Appointment.PENDING,
-                    consultation_fee=consultation_fee,
+                    status=AppointmentStatus.PENDING.value,
                 )
 
                 logger.info(
-                    f"Appointment booked successfully: ID {appointment.id}, Patient: {patient.email}, Doctor: {doctor.email}"
+                    f"Appointment booked successfully: ID {appointment.id}, Patient: {patient.user.email}, Doctor: {doctor.user.email}"
                 )
 
                 return {
@@ -293,7 +293,7 @@ class AppointmentServices:
                         "id": appointment.id,
                         "appointment_date": appointment.appointment_date,
                         "appointment_time": appointment.appointment_time,
-                        "doctor_name": doctor.full_name,
+                        "doctor_name": doctor.user.full_name,
                         "consultation_fee": float(consultation_fee),
                         "status": appointment.status,
                     },
@@ -328,9 +328,7 @@ class AppointmentServices:
                     return {"success": False, "message": "User not found"}
 
                 # Validate new status
-                if new_status not in [
-                    choice[0] for choice in Appointment.STATUS_CHOICES
-                ]:
+                if new_status not in AppointmentStatus.value_list():
                     return {"success": False, "message": "Invalid appointment status"}
 
                 # Authorization checks
@@ -350,7 +348,7 @@ class AppointmentServices:
                     and updater.id == appointment.patient.id
                 ):
                     # Patient can only cancel their own appointments
-                    if new_status == Appointment.CANCELLED:
+                    if new_status == AppointmentStatus.CANCELLED.value:
                         can_update = True
                     else:
                         return {
@@ -369,13 +367,16 @@ class AppointmentServices:
 
                 # Define valid status transitions
                 valid_transitions = {
-                    Appointment.PENDING: [Appointment.CONFIRMED, Appointment.CANCELLED],
-                    Appointment.CONFIRMED: [
-                        Appointment.COMPLETED,
-                        Appointment.CANCELLED,
+                    AppointmentStatus.PENDING.value: [
+                        AppointmentStatus.CONFIRMED.value,
+                        AppointmentStatus.CANCELLED.value,
                     ],
-                    Appointment.CANCELLED: [],  # Cannot change from cancelled
-                    Appointment.COMPLETED: [],  # Cannot change from completed
+                    AppointmentStatus.CONFIRMED.value: [
+                        AppointmentStatus.COMPLETED.value,
+                        AppointmentStatus.CANCELLED.value,
+                    ],
+                    AppointmentStatus.CANCELLED.value: [],  # Cannot change from cancelled
+                    AppointmentStatus.COMPLETED.value: [],  # Cannot change from completed
                 }
 
                 if new_status not in valid_transitions.get(current_status, []):
@@ -385,7 +386,7 @@ class AppointmentServices:
                     }
 
                 # Additional validations for specific status changes
-                if new_status == Appointment.COMPLETED:
+                if new_status == AppointmentStatus.COMPLETED.value:
                     # Can only complete appointments that are in the past or current
                     appointment_datetime = timezone.make_aware(
                         datetime.combine(
@@ -458,8 +459,8 @@ class AppointmentServices:
 
                 # Can only reschedule pending or confirmed appointments
                 if appointment.status not in [
-                    Appointment.PENDING,
-                    Appointment.CONFIRMED,
+                    AppointmentStatus.PENDING.value,
+                    AppointmentStatus.CONFIRMED.value,
                 ]:
                     return {
                         "success": False,
@@ -502,7 +503,7 @@ class AppointmentServices:
                 appointment.appointment_date = new_appointment_date
                 appointment.appointment_time = new_appointment_time
                 appointment.status = (
-                    Appointment.CONFIRMED
+                    AppointmentStatus.CONFIRMED.value
                 )  # Rescheduled appointments are confirmed
                 appointment.updated_at = timezone.now()
                 appointment.save(
@@ -539,7 +540,7 @@ class AppointmentServices:
         """
         try:
             cancellation_result = AppointmentServices.update_appointment_status(
-                appointment_id, Appointment.CANCELLED, user_id
+                appointment_id, AppointmentStatus.CANCELLED.value, user_id
             )
 
             if cancellation_result["success"]:
@@ -617,7 +618,7 @@ class AppointmentServices:
         Get doctor's schedule for a date range
         """
         try:
-            doctor = AppointmentSelector.get_doctor_by_id(doctor_id)
+            doctor = DoctorSelector.get_doctor_by_user(doctor_id)
             if not doctor:
                 return {"success": False, "message": "Doctor not found"}
 
@@ -646,11 +647,11 @@ class AppointmentServices:
                     {
                         "id": apt.id,
                         "time": apt.appointment_time.strftime("%H:%M"),
-                        "patient_name": apt.patient.full_name,
-                        "patient_mobile": getattr(apt.patient, "mobile", ""),
+                        "patient_name": apt.patient.user.full_name,
+                        "patient_mobile": getattr(apt.patient.user.mobile_number),
                         "status": apt.status,
                         "notes": apt.notes,
-                        "consultation_fee": float(apt.consultation_fee),
+                        "consultation_fee": float(apt.doctor.user.consultation_fee),
                     }
                     for apt in appointments
                     if apt.appointment_date == current_date
@@ -688,7 +689,7 @@ class AppointmentServices:
 
             return {
                 "success": True,
-                "doctor_name": doctor.full_name,
+                "doctor_name": doctor.user.full_name,
                 "schedule": schedule,
             }
 

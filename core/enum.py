@@ -13,20 +13,13 @@ class BaseEnum(Enum):
         # Default human-readable label
         return self.name.capitalize()
 
-    def value(self):
-        """
-        Return the actual value of the enum instance.
-        Example: UserType.PATIENT.value() -> "patient"
-        """
-        return self._value_
-
     @classmethod
     def choices(cls):
         """
         Returns a list of tuples for Django model fields:
         [(value, label), ...]
         """
-        return [(member.value(), str(member)) for member in cls]
+        return [(member.value, str(member)) for member in cls]
 
     @classmethod
     def value_list(cls):
@@ -34,7 +27,22 @@ class BaseEnum(Enum):
         Returns a list of all enum values:
         [value1, value2, ...]
         """
-        return [member.value() for member in cls]
+        return [member.value for member in cls]
+
+    def __call__(self):
+        """
+        Makes enum instances callable to return their value.
+        Example: UserType.PATIENT() -> "patient"
+        """
+        return self.value()
+
+    @property
+    def value(self):
+        """
+        Property decorator to allow using .value instead of .value()
+        Example: UserType.PATIENT.value -> "patient"
+        """
+        return self._value_
 
 
 class UserType(BaseEnum):
@@ -43,7 +51,7 @@ class UserType(BaseEnum):
     ADMIN = "admin"
 
 
-class AppointmentStatus(Enum):
+class AppointmentStatus(BaseEnum):
     PENDING = "pending"
     CONFIRMED = "confirmed"
     CANCELLED = "cancelled"

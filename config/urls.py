@@ -28,6 +28,7 @@ swagger_urlpatterns = [
 api_urlpatterns = [
     path("account/", include("apps.account.urls")),
     path("location/", include("apps.location.urls")),
+    path("appointment/", include("apps.appointment.urls")),
 ]
 
 # Django Ckeditor 5 urls

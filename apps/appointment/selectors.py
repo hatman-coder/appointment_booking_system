@@ -5,6 +5,7 @@ from django.db.models import Avg, Count, Q, QuerySet
 from django.utils import timezone
 
 from apps.account.models import Doctor, Patient, User
+from core.enum import AppointmentStatus, UserType
 
 from .models import Appointment
 
@@ -19,12 +20,12 @@ class AppointmentSelector:
             return Appointment.objects.select_related(
                 "patient",
                 "doctor",
-                "patient__division",
-                "patient__district",
-                "patient__thana",
-                "doctor__division",
-                "doctor__district",
-                "doctor__thana",
+                "patient__user__division",
+                "patient__user__district",
+                "patient__user__thana",
+                "doctor__user__division",
+                "doctor__user__district",
+                "doctor__user__thana",
             ).get(id=appointment_id)
         except Appointment.DoesNotExist:
             return None
@@ -41,8 +42,10 @@ class AppointmentSelector:
     def get_doctor_by_id(doctor_id: int) -> Optional[User]:
         """Get doctor user by ID - used by services for validation"""
         try:
-            return User.objects.get(id=doctor_id, user_type=UserType.DOCTOR.value)
-        except User.DoesNotExist:
+            return Doctor.objects.get(
+                id=doctor_id, user__user_type=UserType.DOCTOR.value
+            )
+        except Doctor.DoesNotExist:
             return None
 
     @staticmethod
@@ -113,7 +116,10 @@ class AppointmentSelector:
             Appointment.objects.filter(
                 appointment_date__gte=start_date,
                 appointment_date__lte=end_date,
-                status__in=[Appointment.PENDING, Appointment.CONFIRMED],
+                status__in=[
+                    AppointmentStatus.PENDING.value,
+                    AppointmentStatus.CONFIRMED.value,
+                ],
             )
             .select_related("patient", "doctor")
             .order_by("appointment_date", "appointment_time")
@@ -144,7 +150,10 @@ class AppointmentSelector:
             doctor_id=doctor_id,
             appointment_date=appointment_date,
             appointment_time=appointment_time,
-            status__in=[Appointment.PENDING, Appointment.CONFIRMED],
+            status__in=[
+                AppointmentStatus.PENDING.value,
+                AppointmentStatus.CONFIRMED.value,
+            ],
         ).select_related("patient")
 
     @staticmethod
@@ -156,7 +165,10 @@ class AppointmentSelector:
             doctor_id=doctor_id,
             appointment_date__gte=start_datetime.date(),
             appointment_date__lte=end_datetime.date(),
-            status__in=[Appointment.PENDING, Appointment.CONFIRMED],
+            status__in=[
+                AppointmentStatus.PENDING.value,
+                AppointmentStatus.CONFIRMED.value,
+            ],
         ).select_related("patient")
 
     @staticmethod
@@ -184,7 +196,10 @@ class AppointmentSelector:
                 patient_id=patient_id,
                 doctor_id=doctor_id,
                 appointment_date=appointment_date,
-                status__in=[Appointment.PENDING, Appointment.CONFIRMED],
+                status__in=[
+                    AppointmentStatus.PENDING.value,
+                    AppointmentStatus.CONFIRMED.value,
+                ],
             )
         except Appointment.DoesNotExist:
             return None
@@ -197,7 +212,10 @@ class AppointmentSelector:
         return Appointment.objects.filter(
             patient_id=patient_id,
             appointment_date=appointment_date,
-            status__in=[Appointment.PENDING, Appointment.CONFIRMED],
+            status__in=[
+                AppointmentStatus.PENDING.value,
+                AppointmentStatus.CONFIRMED.value,
+            ],
         ).count()
 
     @staticmethod
@@ -239,7 +257,10 @@ class AppointmentSelector:
         return (
             Appointment.objects.filter(
                 appointment_date=target_date,
-                status__in=[Appointment.PENDING, Appointment.CONFIRMED],
+                status__in=[
+                    AppointmentStatus.PENDING.value,
+                    AppointmentStatus.CONFIRMED.value,
+                ],
             )
             .select_related("patient", "doctor")
             .order_by("appointment_time")
@@ -298,7 +319,10 @@ class AppointmentSelector:
             doctor_id=doctor_id,
             appointment_date=appointment_date,
             appointment_time=appointment_time,
-            status__in=[Appointment.PENDING, Appointment.CONFIRMED],
+            status__in=[
+                AppointmentStatus.PENDING.value,
+                AppointmentStatus.CONFIRMED.value,
+            ],
         )
 
         if exclude_id:
@@ -312,7 +336,10 @@ class AppointmentSelector:
         tomorrow = timezone.now().date() + timedelta(days=1)
         return Appointment.objects.filter(
             appointment_date=tomorrow,
-            status__in=[Appointment.PENDING, Appointment.CONFIRMED],
+            status__in=[
+                AppointmentStatus.PENDING.value,
+                AppointmentStatus.CONFIRMED.value,
+            ],
         ).select_related("patient", "doctor")
 
     @staticmethod
@@ -320,7 +347,7 @@ class AppointmentSelector:
         """Get past appointments that should be marked as completed"""
         yesterday = timezone.now().date() - timedelta(days=1)
         return Appointment.objects.filter(
-            appointment_date__lt=yesterday, status=Appointment.CONFIRMED
+            appointment_date__lt=yesterday, status=AppointmentStatus.CONFIRMED.value
         )
 
     @staticmethod
@@ -374,7 +401,7 @@ class AppointmentSelector:
                     "appointment_date": appointment.appointment_date,
                     "appointment_time": appointment.appointment_time,
                     "status": appointment.status,
-                    "consultation_fee": float(appointment.consultation_fee),
+                    "consultation_fee": float(appointment.doctor.consultation_fee),
                     "notes": appointment.notes,
                     "created_at": appointment.created_at,
                 }
@@ -420,7 +447,7 @@ class AppointmentSelector:
                     "appointment_date": appointment.appointment_date,
                     "appointment_time": appointment.appointment_time,
                     "status": appointment.status,
-                    "consultation_fee": float(appointment.consultation_fee),
+                    "consultation_fee": float(appointment.doctor.consultation_fee),
                     "notes": appointment.notes,
                     "created_at": appointment.created_at,
                 }
@@ -466,7 +493,7 @@ class AppointmentSelector:
                     "appointment_date": appointment.appointment_date,
                     "appointment_time": appointment.appointment_time,
                     "status": appointment.status,
-                    "consultation_fee": float(appointment.consultation_fee),
+                    "consultation_fee": float(appointment.doctor.consultation_fee),
                     "notes": appointment.notes,
                     "created_at": appointment.created_at,
                 }
@@ -501,7 +528,10 @@ class AppointmentSelector:
         booked_appointments = Appointment.objects.filter(
             doctor_id=doctor_id,
             appointment_date=check_date,
-            status__in=[Appointment.PENDING, Appointment.CONFIRMED],
+            status__in=[
+                AppointmentStatus.PENDING.value,
+                AppointmentStatus.CONFIRMED.value,
+            ],
         ).values_list("appointment_time", flat=True)
 
         booked_slots = [time.strftime("%H:%M") for time in booked_appointments]
@@ -536,22 +566,31 @@ class AppointmentSelector:
         appointments = Appointment.objects.filter(patient_id=patient_id)
 
         total = appointments.count()
-        completed = appointments.filter(status=Appointment.COMPLETED).count()
-        pending = appointments.filter(status=Appointment.PENDING).count()
-        confirmed = appointments.filter(status=Appointment.CONFIRMED).count()
-        cancelled = appointments.filter(status=Appointment.CANCELLED).count()
+        completed = appointments.filter(
+            status=AppointmentStatus.COMPLETED.value
+        ).count()
+        pending = appointments.filter(status=AppointmentStatus.PENDING.value).count()
+        confirmed = appointments.filter(
+            status=AppointmentStatus.CONFIRMED.value
+        ).count()
+        cancelled = appointments.filter(
+            status=AppointmentStatus.CANCELLED.value
+        ).count()
 
         # Upcoming appointments
         today = timezone.now().date()
         upcoming = appointments.filter(
             appointment_date__gte=today,
-            status__in=[Appointment.PENDING, Appointment.CONFIRMED],
+            status__in=[
+                AppointmentStatus.PENDING.value,
+                AppointmentStatus.CONFIRMED.value,
+            ],
         ).count()
 
         # Total spent
         total_spent = (
-            appointments.filter(status=Appointment.COMPLETED).aggregate(
-                total=Count("consultation_fee")
+            appointments.filter(status=AppointmentStatus.COMPLETED.value).aggregate(
+                total=Count("doctor__consultation_fee")
             )["total"]
             or 0
         )
@@ -572,10 +611,16 @@ class AppointmentSelector:
         appointments = Appointment.objects.filter(doctor_id=doctor_id)
 
         total = appointments.count()
-        completed = appointments.filter(status=Appointment.COMPLETED).count()
-        pending = appointments.filter(status=Appointment.PENDING).count()
-        confirmed = appointments.filter(status=Appointment.CONFIRMED).count()
-        cancelled = appointments.filter(status=Appointment.CANCELLED).count()
+        completed = appointments.filter(
+            status=AppointmentStatus.COMPLETED.value
+        ).count()
+        pending = appointments.filter(status=AppointmentStatus.PENDING.value).count()
+        confirmed = appointments.filter(
+            status=AppointmentStatus.CONFIRMED.value
+        ).count()
+        cancelled = appointments.filter(
+            status=AppointmentStatus.CANCELLED.value
+        ).count()
 
         # Today's appointments
         today = timezone.now().date()
@@ -589,8 +634,8 @@ class AppointmentSelector:
 
         # Revenue (from completed appointments)
         total_revenue = (
-            appointments.filter(status=Appointment.COMPLETED).aggregate(
-                revenue=Count("consultation_fee")
+            appointments.filter(status=AppointmentStatus.COMPLETED.value).aggregate(
+                revenue=Count("doctor__consultation_fee")
             )["revenue"]
             or 0
         )
@@ -612,10 +657,16 @@ class AppointmentSelector:
         appointments = Appointment.objects.all()
 
         total = appointments.count()
-        completed = appointments.filter(status=Appointment.COMPLETED).count()
-        pending = appointments.filter(status=Appointment.PENDING).count()
-        confirmed = appointments.filter(status=Appointment.CONFIRMED).count()
-        cancelled = appointments.filter(status=Appointment.CANCELLED).count()
+        completed = appointments.filter(
+            status=AppointmentStatus.COMPLETED.value
+        ).count()
+        pending = appointments.filter(status=AppointmentStatus.PENDING.value).count()
+        confirmed = appointments.filter(
+            status=AppointmentStatus.CONFIRMED.value
+        ).count()
+        cancelled = appointments.filter(
+            status=AppointmentStatus.CANCELLED.value
+        ).count()
 
         # Today's appointments
         today = timezone.now().date()
@@ -683,15 +734,15 @@ class AppointmentSelector:
             appointments_data.append(
                 {
                     "id": appointment.id,
-                    "patient_name": appointment.patient.full_name,
+                    "patient_name": appointment.patient.user.full_name,
                     "patient_id": appointment.patient.id,
-                    "patient_email": appointment.patient.email,
-                    "doctor_name": appointment.doctor.full_name,
+                    "patient_email": appointment.patient.user.email,
+                    "doctor_name": appointment.doctor.user.full_name,
                     "doctor_id": appointment.doctor.id,
                     "appointment_date": appointment.appointment_date,
                     "appointment_time": appointment.appointment_time,
                     "status": appointment.status,
-                    "consultation_fee": float(appointment.consultation_fee),
+                    "consultation_fee": float(appointment.doctor.consultation_fee),
                     "notes": appointment.notes,
                     "created_at": appointment.created_at,
                     "updated_at": appointment.updated_at,
