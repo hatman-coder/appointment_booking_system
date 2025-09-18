@@ -1,7 +1,7 @@
-from typing import List, Optional, Dict, Any
 import uuid
-from django.db.models import QuerySet, Count
-from django.db.models import Q
+from typing import Any, Dict, List, Optional
+
+from django.db.models import Count, Q, QuerySet
 
 from .models import District, Division, Thana
 
@@ -230,7 +230,7 @@ class LocationSelector:
 
     @staticmethod
     def get_locations_with_pagination(
-        location_type: str, page: uuid = 1, limit: uuid = 20
+        location_type: str, page: int = 1, limit: int = 20
     ) -> Dict[str, Any]:
         """Get locations with pagination"""
         from django.core.paginator import Paginator

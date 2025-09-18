@@ -1,5 +1,6 @@
 from django.contrib import admin
-from .models import Division, District, Thana
+
+from .models import District, Division, Thana
 
 
 class DivisionAdmin(admin.ModelAdmin):

@@ -1,18 +1,14 @@
-import json
 import logging
 
-from django.http import JsonResponse
-from django.utils import timezone
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 
-from apps.account.models import User
-
 from .services import LocationServices
 
 logger = logging.getLogger(__name__)
+from core.enum import UserType
 
 
 def standardize_response(success: bool, message: str, data=None, status_code=None):

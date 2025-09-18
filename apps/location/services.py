@@ -1,10 +1,10 @@
 import logging
-from typing import Any, Dict, List, Optional
+import uuid
+from typing import Any, Dict
 
-from django.conf import settings
 from django.core.cache import cache
 
-from .models import District, Division, Thana
+from .models import District, Division
 from .selectors import LocationSelector
 
 logger = logging.getLogger(__name__)
@@ -56,7 +56,7 @@ class LocationServices:
             return {"success": False, "message": "Failed to retrieve divisions"}
 
     @staticmethod
-    def get_districts_by_division(division_id: int) -> Dict[str, Any]:
+    def get_districts_by_division(division_id: uuid) -> Dict[str, Any]:
         """
         Get districts by division ID with caching and validation
         """
@@ -105,7 +105,7 @@ class LocationServices:
             return {"success": False, "message": "Failed to retrieve districts"}
 
     @staticmethod
-    def get_thanas_by_district(district_id: int) -> Dict[str, Any]:
+    def get_thanas_by_district(district_id: uuid) -> Dict[str, Any]:
         """
         Get thanas by district ID with caching and validation
         """
@@ -157,7 +157,7 @@ class LocationServices:
 
     @staticmethod
     def get_location_hierarchy(
-        thana_id: int = None, district_id: int = None, division_id: int = None
+        thana_id: uuid = None, district_id: uuid = None, division_id: uuid = None
     ) -> Dict[str, Any]:
         """
         Get complete location hierarchy for a given location
@@ -237,7 +237,7 @@ class LocationServices:
 
     @staticmethod
     def validate_location_hierarchy(
-        division_id: int, district_id: int = None, thana_id: int = None
+        division_id: uuid, district_id: uuid = None, thana_id: uuid = None
     ) -> Dict[str, Any]:
         """
         Validate that the provided location hierarchy is correct
