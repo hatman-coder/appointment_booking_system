@@ -34,105 +34,48 @@ def standardize_response(success: bool, message: str, data=None, status_code=Non
 @api_view(["POST"])
 @permission_classes([AllowAny])
 def register_user(request):
+    """Register a new user (patient/doctor)"""
+    # Example request data for doctor registration:
     """
-    User registration endpoint
-    POST /api/users/register/
-
-    Expected payload:
     {
-        "email": "user@example.com",
+        "username": "doctor1",
+        "email": "doctor1@example.com",
+        "full_name": "Dr. John Doe",
         "mobile_number": "+8801712345678",
-        "password": "StrongPass123!",
-        "full_name": "John Doe",
-        "user_type": "patient",
+        "password": "SecurePass123!",
+        "user_type": "doctor",
         "division_id": 1,
         "district_id": 1,
         "thana_id": 1,
-        "profile_image": <file>,
-        // For doctors only:
-        "license_number": "DOC12345",
-        "experience_years": 5,
-        "consultation_fee": 500.00,
-        "available_timeslots": ["10:00-11:00", "14:00-15:00"]
+        "license_number": "BMA-12345",
+        "experience_years": 10,
+        "consultation_fee": 1500.00,
+        "specialization": "cardiology",
+        "available_timeslots": [
+            {
+                "day_of_week": 0,
+                "start_time": "09:00",
+                "end_time": "12:00"
+            },
+            {
+                "day_of_week": 1,
+                "start_time": "14:00",
+                "end_time": "17:00"
+            },
+            {
+                "day_of_week": 2,
+                "start_time": "09:00",
+                "end_time": "12:00"
+            }
+        ]
     }
     """
-    try:
-        # Handle both JSON and form data
-        if request.content_type == "application/json":
-            user_data = json.loads(request.body)
-        else:
-            user_data = request.data.dict()
+    result = UserServices.register_user(request.data)
 
-        # Handle file upload (profile_image)
-        if "profile_image" in request.FILES:
-            user_data["profile_image"] = request.FILES["profile_image"]
-
-        # Handle timeslots for doctors (convert from JSON string if needed)
-        if "available_timeslots" in user_data and isinstance(
-            user_data["available_timeslots"], str
-        ):
-            try:
-                user_data["available_timeslots"] = json.loads(
-                    user_data["available_timeslots"]
-                )
-            except json.JSONDecodeError:
-                return standardize_response(
-                    False,
-                    "Invalid timeslots format",
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                )
-
-        # Convert numeric fields
-        for field in ["experience_years"]:
-            if field in user_data and user_data[field]:
-                try:
-                    user_data[field] = int(user_data[field])
-                except (ValueError, TypeError):
-                    return standardize_response(
-                        False,
-                        f"Invalid {field} format",
-                        status_code=status.HTTP_400_BAD_REQUEST,
-                    )
-
-        if "consultation_fee" in user_data and user_data["consultation_fee"]:
-            try:
-                user_data["consultation_fee"] = float(user_data["consultation_fee"])
-            except (ValueError, TypeError):
-                return standardize_response(
-                    False,
-                    "Invalid consultation fee format",
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                )
-
-        # Register user
-        result = UserServices.register_user(user_data)
-
-        if result["success"]:
-            logger.info(
-                f"User registered successfully via API: {user_data.get('email')}"
-            )
-            return standardize_response(
-                True,
-                result["message"],
-                {"user_id": result["user_id"], "user_type": result["user_type"]},
-                status_code=status.HTTP_201_CREATED,
-            )
-        else:
-            return standardize_response(
-                False, result["message"], status_code=status.HTTP_400_BAD_REQUEST
-            )
-
-    except json.JSONDecodeError:
-        return standardize_response(
-            False, "Invalid JSON format", status_code=status.HTTP_400_BAD_REQUEST
-        )
-    except Exception as e:
-        logger.error(f"Registration API error: {str(e)}")
-        return standardize_response(
-            False,
-            "Registration failed due to server error",
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-        )
+    if result["success"]:
+        return Response(result, status=status.HTTP_201_CREATED)
+    else:
+        return Response(result, status=status.HTTP_400_BAD_REQUEST)
 
 
 @api_view(["POST"])

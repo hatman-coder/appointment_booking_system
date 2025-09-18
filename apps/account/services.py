@@ -17,7 +17,7 @@ from apps.appointment.selectors import AppointmentSelector
 from apps.location.selectors import LocationSelector
 from core.enum import UserType
 
-from .models import User
+from .models import User, Doctor, DoctorSchedule, Patient
 from .selectors import DoctorSelector, PatientSelector, UserSelector
 
 logger = logging.getLogger(__name__)
@@ -84,42 +84,72 @@ class UserServices:
         return True, ""
 
     @staticmethod
-    def validate_doctor_timeslots(timeslots: List[str]) -> Tuple[bool, List[str]]:
+    def validate_doctor_timeslots(timeslots: List[Dict]) -> Tuple[bool, List[str]]:
         """
         Validate doctor timeslots format
-        Expected format: ["10:00-11:00", "14:00-15:00"]
+        Expected format: [
+            {"day_of_week": 0, "start_time": "10:00", "end_time": "11:00"},
+            {"day_of_week": 1, "start_time": "14:00", "end_time": "15:00"}
+        ]
         """
         errors = []
-        time_pattern = r"^\d{2}:\d{2}-\d{2}:\d{2}$"
+        time_pattern = r"^\d{2}:\d{2}$"
 
         for slot in timeslots:
-            if not re.match(time_pattern, slot):
+            if not isinstance(slot, dict):
                 errors.append(
-                    f"Invalid timeslot format: {slot}. Use HH:MM-HH:MM format"
+                    "Each timeslot must be an object with day_of_week, start_time, end_time"
                 )
                 continue
 
+            day_of_week = slot.get("day_of_week")
+            start_time = slot.get("start_time")
+            end_time = slot.get("end_time")
+
+            # Validate day_of_week
+            if (
+                day_of_week is None
+                or not isinstance(day_of_week, int)
+                or not (0 <= day_of_week <= 6)
+            ):
+                errors.append(
+                    f"day_of_week must be an integer between 0-6, got: {day_of_week}"
+                )
+                continue
+
+            # Validate time formats
+            if not start_time or not re.match(time_pattern, start_time):
+                errors.append(
+                    f"Invalid start_time format: {start_time}. Use HH:MM format"
+                )
+                continue
+
+            if not end_time or not re.match(time_pattern, end_time):
+                errors.append(f"Invalid end_time format: {end_time}. Use HH:MM format")
+                continue
+
             try:
-                start_time, end_time = slot.split("-")
                 start_hour, start_min = map(int, start_time.split(":"))
                 end_hour, end_min = map(int, end_time.split(":"))
 
                 # Validate time ranges
                 if not (0 <= start_hour <= 23 and 0 <= start_min <= 59):
-                    errors.append(f"Invalid start time in slot: {slot}")
+                    errors.append(f"Invalid start time: {start_time}")
 
                 if not (0 <= end_hour <= 23 and 0 <= end_min <= 59):
-                    errors.append(f"Invalid end time in slot: {slot}")
+                    errors.append(f"Invalid end time: {end_time}")
 
                 # Check if start time is before end time
                 start_minutes = start_hour * 60 + start_min
                 end_minutes = end_hour * 60 + end_min
 
                 if start_minutes >= end_minutes:
-                    errors.append(f"Start time must be before end time in slot: {slot}")
+                    errors.append(
+                        f"Start time must be before end time: {start_time}-{end_time}"
+                    )
 
             except ValueError:
-                errors.append(f"Invalid time format in slot: {slot}")
+                errors.append(f"Invalid time format in timeslot")
 
         return len(errors) == 0, errors
 
@@ -178,6 +208,9 @@ class UserServices:
                 password = user_data.get("password", "")
                 user_type = user_data.get("user_type", "")
                 full_name = user_data.get("full_name", "").strip()
+                username = user_data.get(
+                    "username", email
+                )  # Use email as username if not provided
 
                 # Basic field validation
                 if not all([email, mobile_number, password, user_type, full_name]):
@@ -190,10 +223,10 @@ class UserServices:
                     raise UserValidationError("Invalid email format")
 
                 # Check unique email and mobile_number
-                if UserSelector.get_user_by_email(email):
+                if UserSelector.check_email_exists(email):
                     raise UserValidationError("Email already exists")
 
-                if UserSelector.get_user_by_mobile(mobile_number):
+                if UserSelector.check_mobile_exists(mobile_number):
                     raise UserValidationError("Mobile number already exists")
 
                 # Mobile number validation
@@ -242,10 +275,12 @@ class UserServices:
                         raise UserValidationError(image_error)
 
                 # Doctor-specific validation
+                doctor_data = {}
                 if user_type == UserType.DOCTOR.value:
                     license_number = user_data.get("license_number", "").strip()
                     experience_years = user_data.get("experience_years")
                     consultation_fee = user_data.get("consultation_fee")
+                    specialization = user_data.get("specialization", "").strip()
                     available_timeslots = user_data.get("available_timeslots", [])
 
                     if not license_number:
@@ -253,14 +288,19 @@ class UserServices:
                             "License number is required for doctors"
                         )
 
-                    if not experience_years or experience_years < 0:
+                    if not experience_years or int(experience_years) < 0:
                         raise UserValidationError(
                             "Valid experience years is required for doctors"
                         )
 
-                    if not consultation_fee or consultation_fee <= 0:
+                    if not consultation_fee or float(consultation_fee) <= 0:
                         raise UserValidationError(
                             "Valid consultation fee is required for doctors"
+                        )
+
+                    if not specialization:
+                        raise UserValidationError(
+                            "Specialization is required for doctors"
                         )
 
                     if not available_timeslots:
@@ -279,8 +319,18 @@ class UserServices:
                     if DoctorSelector.check_license_exists(license_number):
                         raise UserValidationError("License number already exists")
 
+                    # Store doctor data for later use
+                    doctor_data = {
+                        "license_number": license_number,
+                        "experience_years": int(experience_years),
+                        "consultation_fee": float(consultation_fee),
+                        "specialization": specialization,
+                        "available_timeslots": available_timeslots,
+                    }
+
                 # Create user
                 user = User.objects.create(
+                    username=username,
                     email=email,
                     mobile_number=mobile_number,
                     password=make_password(password),
@@ -289,32 +339,40 @@ class UserServices:
                     division_id=division_id,
                     district_id=district_id,
                     thana_id=thana_id,
+                    profile_image=profile_image,
                     is_active=True,
                 )
 
-                # Handle profile image
-                if profile_image:
-                    image_path = cls.process_profile_image(profile_image, user.id)
-                    if image_path:
-                        user.profile_image = image_path
-                        user.save(update_fields=["profile_image"])
-
-                # Handle doctor-specific fields
+                # Create user type specific profiles
                 if user_type == UserType.DOCTOR.value:
-                    user.license_number = license_number
-                    user.experience_years = experience_years
-                    user.consultation_fee = consultation_fee
-                    user.available_timeslots = available_timeslots
-                    user.save(
-                        update_fields=[
-                            "license_number",
-                            "experience_years",
-                            "consultation_fee",
-                            "available_timeslots",
-                        ]
+                    breakpoint()
+                    # Create doctor profile
+                    doctor = Doctor.objects.create(
+                        user=user,
+                        license_number=doctor_data["license_number"],
+                        experience_years=doctor_data["experience_years"],
+                        consultation_fee=doctor_data["consultation_fee"],
+                        specialization=doctor_data["specialization"],
+                    )
+                    breakpoint()
+                    # Create doctor schedules
+                    for slot in doctor_data["available_timeslots"]:
+                        DoctorSchedule.objects.create(
+                            doctor=doctor,
+                            day_of_week=slot["day_of_week"],
+                            start_time=slot["start_time"],
+                            end_time=slot["end_time"],
+                            is_active=True,
+                        )
+
+                    logger.info(
+                        f"Doctor registered successfully: {email} with {len(doctor_data['available_timeslots'])} schedules"
                     )
 
-                logger.info(f"User registered successfully: {email}")
+                elif user_type == UserType.PATIENT:
+                    # Create patient profile
+                    Patient.objects.create(user=user)
+                    logger.info(f"Patient registered successfully: {email}")
 
                 return {
                     "success": True,
