@@ -76,7 +76,7 @@ A comprehensive healthcare appointment management system built with Django REST 
 ### 1. Clone the Repository
 
 ```bash
-git clone https://github.com/yourusername/appointment-booking-system.git
+git clone https://github.com/hatman-coder/appointment_booking_system
 cd appointment-booking-system
 ```
 
@@ -200,9 +200,9 @@ redis-server
 
 ```bash
 # Start all services in background
-celery -A appointment_system worker --detach --loglevel=info
-celery -A appointment_system beat --detach --loglevel=info
-gunicorn appointment_system.wsgi:application --bind 0.0.0.0:8000
+celery -A config worker --detach --loglevel=info
+celery -A config beat --detach --loglevel=info
+gunicorn config.wsgi:application --bind 0.0.0.0:8000
 ```
 
 ## 📚 API Documentation
@@ -355,6 +355,16 @@ The system comes with pre-seeded test data:
 Admin: admin@hospital.com / admin123
 Doctor: doctor1@hospital.com / doctor123
 Patient: patient1@gmail.com / patient123
+```
+
+### Initial Data Setup
+
+```bash
+# Load location data
+python3 manage.py seed_locations
+
+# Create sample users
+python3 manage.py seed_sample_users
 ```
 
 ### API Testing
