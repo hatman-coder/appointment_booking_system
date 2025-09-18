@@ -1,8 +1,10 @@
 from django.db import models
+
 from apps.account.models import Doctor
+from core.models import BaseModel
 
 
-class MonthlyReport(models.Model):
+class MonthlyReport(BaseModel):
     doctor = models.ForeignKey(
         Doctor, on_delete=models.CASCADE, related_name="monthly_reports"
     )

@@ -1,11 +1,11 @@
-from django.db import transaction
-from django.db.models import Count, Sum
-from apps.appointment.models import Appointment
-from apps.account.models import Doctor
-from .models import MonthlyReport
-from .selectors import ReportSelector
-from typing import Dict, Any
 import logging
+
+from django.db import transaction
+
+from apps.account.models import Doctor
+from apps.appointment.models import Appointment
+
+from .models import MonthlyReport
 
 logger = logging.getLogger(__name__)
 

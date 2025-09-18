@@ -1,11 +1,14 @@
-from celery import shared_task
-from django.core.mail import send_mail
-from django.conf import settings
-from django.utils import timezone
-from apps.appointment.models import Appointment
-from .services import ReportService
-from datetime import timedelta
 import logging
+from datetime import timedelta
+
+from celery import shared_task
+from django.conf import settings
+from django.core.mail import send_mail
+from django.utils import timezone
+
+from apps.appointment.models import Appointment
+
+from .services import ReportService
 
 logger = logging.getLogger(__name__)
 
@@ -38,7 +41,7 @@ def send_appointment_reminders():
 @shared_task
 def generate_monthly_reports():
     """Generate monthly reports for all doctors"""
-    from apps.accounts.models import Doctor
+    from apps.account.models import Doctor
 
     current_date = timezone.now().date()
     # Generate for previous month

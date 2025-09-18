@@ -1,10 +1,12 @@
+import logging
+
+from django.core.paginator import Paginator
 from rest_framework import permissions, status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
-from django.core.paginator import Paginator
+
 from .selectors import ReportSelector
 from .services import ReportService
-import logging
 
 logger = logging.getLogger(__name__)
 
@@ -95,8 +97,9 @@ def generate_monthly_report(request):
         )
 
     # Check if user can generate report for this doctor
-    if request.user.user_type == "doctor" and request.user.doctor_profile.id != int(
-        doctor_id
+    if (
+        request.user.user_type == "doctor"
+        and str(request.user.doctor_profile.id) != doctor_id
     ):
         return Response(
             {"error": "Can only generate reports for yourself"},
@@ -104,9 +107,7 @@ def generate_monthly_report(request):
         )
 
     try:
-        report = ReportService.generate_monthly_report(
-            int(doctor_id), int(month), int(year)
-        )
+        report = ReportService.generate_monthly_report(doctor_id, int(month), int(year))
 
         # Manual data formatting
         report_data = {

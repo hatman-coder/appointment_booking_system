@@ -1,6 +1,8 @@
-from django.db.models import QuerySet
-from .models import MonthlyReport
 from typing import Optional
+
+from django.db.models import QuerySet
+
+from .models import MonthlyReport
 
 
 class ReportSelector:
