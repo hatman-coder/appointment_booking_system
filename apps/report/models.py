@@ -1,14 +1,12 @@
-from core.models import BaseModel
 from django.db import models
-
 from apps.account.models import Doctor
 
 
-class MonthlyReport(BaseModel):
+class MonthlyReport(models.Model):
     doctor = models.ForeignKey(
         Doctor, on_delete=models.CASCADE, related_name="monthly_reports"
     )
-    month = models.PositiveIntegerField()
+    month = models.PositiveIntegerField()  # 1-12
     year = models.PositiveIntegerField()
     total_patients = models.PositiveIntegerField(default=0)
     total_appointments = models.PositiveIntegerField(default=0)
@@ -22,18 +20,3 @@ class MonthlyReport(BaseModel):
 
     def __str__(self):
         return f"{self.doctor.user.full_name} - {self.month}/{self.year}"
-
-
-class AppointmentReminder(BaseModel):
-    appointment = models.OneToOneField(
-        "appointment.Appointment", on_delete=models.CASCADE, related_name="reminder"
-    )
-    reminder_sent = models.BooleanField(default=False)
-    sent_at = models.DateTimeField(null=True, blank=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-
-    class Meta:
-        db_table = "appointment_reminders"
-
-    def __str__(self):
-        return f"Reminder for {self.appointment}"

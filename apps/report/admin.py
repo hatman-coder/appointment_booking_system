@@ -1,43 +1,31 @@
 from django.contrib import admin
-from .models import MonthlyReport, AppointmentReminder
+from .models import MonthlyReport
 
 
+@admin.register(MonthlyReport)
 class MonthlyReportAdmin(admin.ModelAdmin):
-    list_display = (
-        "id",
-        "doctor_name",
+    list_display = [
+        "doctor",
         "month",
         "year",
         "total_patients",
         "total_appointments",
         "total_earnings",
-        "created_at",
-    )
-    list_filter = ("year", "month", "doctor")
-    search_fields = ("doctor__user__full_name",)
-    ordering = ("-year", "-month")
-
-    def doctor_name(self, obj):
-        return obj.doctor.user.full_name
-
-    doctor_name.short_description = "Doctor"
+    ]
+    list_filter = ["year", "month"]
+    search_fields = ["doctor__user__full_name"]
+    readonly_fields = ["created_at", "updated_at"]
 
 
-class AppointmentReminderAdmin(admin.ModelAdmin):
-    list_display = (
-        "id",
-        "appointment",
-        "reminder_sent",
-        "sent_at",
-        "created_at",
-    )
-    list_filter = ("reminder_sent", "sent_at")
-    search_fields = (
-        "appointment__patient__user__full_name",
-        "appointment__doctor__user__full_name",
-    )
-    ordering = ("-created_at",)
+# utils/permissions.py
+from rest_framework import permissions
 
 
-admin.site.register(MonthlyReport, MonthlyReportAdmin)
-admin.site.register(AppointmentReminder, AppointmentReminderAdmin)
+class IsAdminOrDoctorOwner(permissions.BasePermission):
+    def has_object_permission(self, request, view, obj):
+        user = request.user
+        if user.user_type == "admin":
+            return True
+        elif user.user_type == "doctor":
+            return obj.doctor.user == user
+        return False

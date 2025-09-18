@@ -29,6 +29,7 @@ api_urlpatterns = [
     path("account/", include("apps.account.urls")),
     path("location/", include("apps.location.urls")),
     path("appointment/", include("apps.appointment.urls")),
+    path("report/", include("apps.report.urls")),
 ]
 
 # Django Ckeditor 5 urls
