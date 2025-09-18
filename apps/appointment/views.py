@@ -245,13 +245,13 @@ def get_appointment_detail(request, appointment_id):
             "id": appointment.id,
             "patient": {
                 "id": appointment.patient.id,
-                "full_name": appointment.patient.full_name,
-                "email": appointment.patient.email,
-                "mobile": getattr(appointment.patient, "mobile", ""),
+                "full_name": appointment.patient.user.full_name,
+                "email": appointment.patient.user.email,
+                "mobile_number": appointment.patient.user.mobile_number,
             },
             "doctor": {
                 "id": appointment.doctor.id,
-                "full_name": appointment.doctor.full_name,
+                "full_name": appointment.doctor.user.full_name,
                 "license_number": getattr(appointment.doctor, "license_number", ""),
                 "consultation_fee": float(
                     getattr(appointment.doctor, "consultation_fee", 0)
@@ -261,7 +261,7 @@ def get_appointment_detail(request, appointment_id):
             "appointment_time": appointment.appointment_time,
             "appointment_datetime": appointment_datetime,
             "status": appointment.status,
-            "consultation_fee": float(appointment.consultation_fee),
+            "consultation_fee": float(appointment.doctor.consultation_fee),
             "notes": appointment.notes,
             "created_at": appointment.created_at,
             "updated_at": appointment.updated_at,

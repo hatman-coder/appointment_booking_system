@@ -1,4 +1,5 @@
 import logging
+import uuid
 from datetime import datetime, time, timedelta
 from decimal import Decimal
 from typing import Any, Dict, List, Optional, Tuple
@@ -6,11 +7,12 @@ from typing import Any, Dict, List, Optional, Tuple
 from django.db import transaction
 from django.utils import timezone
 
+from apps.account.models import DoctorSchedule
+from apps.account.selectors import DoctorSelector, PatientSelector
+from core.enum import AppointmentStatus, UserType
+
 from .models import Appointment
 from .selectors import AppointmentSelector
-from core.enum import UserType, AppointmentStatus
-from apps.account.models import DoctorSchedule
-from apps.account.selectors import PatientSelector, DoctorSelector
 
 logger = logging.getLogger(__name__)
 
@@ -99,7 +101,7 @@ class AppointmentServices:
 
     @staticmethod
     def check_doctor_availability(
-        doctor_id: int, appointment_datetime: datetime
+        doctor_id: uuid, appointment_datetime: datetime
     ) -> Tuple[bool, str]:
         """
         Check if doctor is available at the requested time based on their schedule
@@ -158,7 +160,7 @@ class AppointmentServices:
         return True, ""
 
     @staticmethod
-    def calculate_appointment_fee(doctor_id: int) -> Optional[Decimal]:
+    def calculate_appointment_fee(doctor_id: uuid) -> Optional[Decimal]:
         """
         Calculate appointment fee based on doctor's consultation fee
         """
@@ -311,7 +313,7 @@ class AppointmentServices:
 
     @staticmethod
     def update_appointment_status(
-        appointment_id: int, new_status: str, updated_by_user_id: int
+        appointment_id: uuid, new_status: str, updated_by_user_id: uuid
     ) -> Dict[str, Any]:
         """
         Update appointment status with proper authorization
@@ -423,7 +425,7 @@ class AppointmentServices:
 
     @classmethod
     def reschedule_appointment(
-        cls, appointment_id: int, new_date: str, new_time: str, user_id: int
+        cls, appointment_id: uuid, new_date: str, new_time: str, user_id: uuid
     ) -> Dict[str, Any]:
         """
         Reschedule an existing appointment
@@ -533,7 +535,7 @@ class AppointmentServices:
 
     @staticmethod
     def cancel_appointment(
-        appointment_id: int, user_id: int, cancellation_reason: str = ""
+        appointment_id: uuid, user_id: uuid, cancellation_reason: str = ""
     ) -> Dict[str, Any]:
         """
         Cancel an appointment
@@ -598,7 +600,7 @@ class AppointmentServices:
                         "patient_mobile": getattr(appointment.patient, "mobile", ""),
                         "doctor_name": appointment.doctor.full_name,
                         "appointment_datetime": appointment_datetime,
-                        "consultation_fee": float(appointment.consultation_fee),
+                        "consultation_fee": float(appointment.doctor.consultation_fee),
                         "notes": appointment.notes,
                     }
                 )
@@ -612,7 +614,7 @@ class AppointmentServices:
 
     @staticmethod
     def get_doctor_schedule(
-        doctor_id: int, date_from: str, date_to: str
+        doctor_id: uuid, date_from: str, date_to: str
     ) -> Dict[str, Any]:
         """
         Get doctor's schedule for a date range
@@ -699,7 +701,7 @@ class AppointmentServices:
 
     @staticmethod
     def get_patient_appointment_history(
-        patient_id: int, status_filter: str = None
+        patient_id: uuid, status_filter: str = None
     ) -> Dict[str, Any]:
         """
         Get patient's appointment history with optional status filter
@@ -734,7 +736,7 @@ class AppointmentServices:
                         "appointment_time": appointment.appointment_time,
                         "appointment_datetime": appointment_datetime,
                         "status": appointment.status,
-                        "consultation_fee": float(appointment.consultation_fee),
+                        "consultation_fee": float(appointment.doctor.consultation_fee),
                         "notes": appointment.notes,
                         "created_at": appointment.created_at,
                         "updated_at": appointment.updated_at,
@@ -748,27 +750,27 @@ class AppointmentServices:
                     [
                         a
                         for a in appointment_history
-                        if a["status"] == Appointment.COMPLETED
+                        if a["status"] == AppointmentStatus.COMPLETED.value
                     ]
                 ),
                 "pending_appointments": len(
                     [
                         a
                         for a in appointment_history
-                        if a["status"] == Appointment.PENDING
+                        if a["status"] == AppointmentStatus.PENDING.value
                     ]
                 ),
                 "cancelled_appointments": len(
                     [
                         a
                         for a in appointment_history
-                        if a["status"] == Appointment.CANCELLED
+                        if a["status"] == AppointmentStatus.CANCELLED.value
                     ]
                 ),
                 "total_spent": sum(
                     a["consultation_fee"]
                     for a in appointment_history
-                    if a["status"] == Appointment.COMPLETED
+                    if a["status"] == AppointmentStatus.COMPLETED.value
                 ),
             }
 

@@ -1,10 +1,11 @@
+import uuid
 from datetime import date, datetime, timedelta
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Optional
 
-from django.db.models import Avg, Count, Q, QuerySet
+from django.db.models import Count, Q, QuerySet
 from django.utils import timezone
 
-from apps.account.models import Doctor, Patient, User
+from apps.account.models import Doctor, User
 from core.enum import AppointmentStatus, UserType
 
 from .models import Appointment
@@ -14,7 +15,7 @@ class AppointmentSelector:
     """Selector class for appointment-related queries"""
 
     @staticmethod
-    def get_appointment_by_id(appointment_id: int) -> Optional[Appointment]:
+    def get_appointment_by_id(appointment_id: uuid) -> Optional[Appointment]:
         """Get appointment by ID with related data"""
         try:
             return Appointment.objects.select_related(
@@ -31,7 +32,7 @@ class AppointmentSelector:
             return None
 
     @staticmethod
-    def get_user_by_id(user_id: int) -> Optional[User]:
+    def get_user_by_id(user_id: uuid) -> Optional[User]:
         """Get user by ID - used by services for validation"""
         try:
             return User.objects.get(id=user_id)
@@ -60,7 +61,7 @@ class AppointmentSelector:
         return Appointment.objects.all().count()
 
     @staticmethod
-    def get_appointments_by_patient(patient_id: int) -> QuerySet:
+    def get_appointments_by_patient(patient_id: uuid) -> QuerySet:
         """Get all appointments for a patient"""
         return (
             Appointment.objects.filter(patient_id=patient_id)
@@ -69,7 +70,7 @@ class AppointmentSelector:
         )
 
     @staticmethod
-    def get_appointments_by_doctor(doctor_id: int) -> QuerySet:
+    def get_appointments_by_doctor(doctor_id: uuid) -> QuerySet:
         """Get all appointments for a doctor"""
         return (
             Appointment.objects.filter(doctor_id=doctor_id)
@@ -127,7 +128,7 @@ class AppointmentSelector:
 
     @staticmethod
     def get_doctor_appointments_by_date(
-        doctor_id: int, appointment_date: date
+        doctor_id: uuid, appointment_date: date
     ) -> QuerySet:
         """Get doctor's appointments for a specific date"""
         return (
@@ -140,7 +141,7 @@ class AppointmentSelector:
 
     @staticmethod
     def get_doctor_appointments_by_datetime(
-        doctor_id: int, appointment_datetime: datetime
+        doctor_id: uuid, appointment_datetime: datetime
     ) -> QuerySet:
         """Get doctor's appointments at exact datetime - used by services for conflict checking"""
         appointment_date = appointment_datetime.date()
@@ -158,7 +159,7 @@ class AppointmentSelector:
 
     @staticmethod
     def get_doctor_appointments_in_range(
-        doctor_id: int, start_datetime: datetime, end_datetime: datetime
+        doctor_id: uuid, start_datetime: datetime, end_datetime: datetime
     ) -> QuerySet:
         """Get doctor's appointments within datetime range - used by services for conflict checking"""
         return Appointment.objects.filter(
@@ -173,7 +174,7 @@ class AppointmentSelector:
 
     @staticmethod
     def get_doctor_appointments_in_date_range(
-        doctor_id: int, from_date: date, to_date: date
+        doctor_id: uuid, from_date: date, to_date: date
     ) -> QuerySet:
         """Get doctor's appointments within date range - used by services for schedule"""
         return (
@@ -188,7 +189,7 @@ class AppointmentSelector:
 
     @staticmethod
     def get_patient_appointment_with_doctor_on_date(
-        patient_id: int, doctor_id: int, appointment_date: date
+        patient_id: uuid, doctor_id: uuid, appointment_date: date
     ) -> Optional[Appointment]:
         """Check if patient has appointment with doctor on specific date - used by services"""
         try:
@@ -206,7 +207,7 @@ class AppointmentSelector:
 
     @staticmethod
     def get_patient_appointments_count_on_date(
-        patient_id: int, appointment_date: date
+        patient_id: uuid, appointment_date: date
     ) -> int:
         """Get count of patient's appointments on specific date - used by services"""
         return Appointment.objects.filter(
@@ -220,7 +221,7 @@ class AppointmentSelector:
 
     @staticmethod
     def get_patient_appointments_history(
-        patient_id: int, limit: int = None
+        patient_id: uuid, limit: int = None
     ) -> QuerySet:
         """Get patient's appointment history"""
         queryset = (
@@ -236,7 +237,7 @@ class AppointmentSelector:
 
     @staticmethod
     def get_patient_appointments(
-        patient_id: int, status_filter: str = None
+        patient_id: uuid, status_filter: str = None
     ) -> QuerySet:
         """Get patient's appointments with optional status filter - used by services"""
         queryset = (
@@ -281,8 +282,8 @@ class AppointmentSelector:
 
     @staticmethod
     def filter_appointments(
-        doctor_id: int = None,
-        patient_id: int = None,
+        doctor_id: uuid = None,
+        patient_id: uuid = None,
         status: str = None,
         start_date: date = None,
         end_date: date = None,
@@ -309,10 +310,10 @@ class AppointmentSelector:
 
     @staticmethod
     def check_appointment_slot_available(
-        doctor_id: int,
+        doctor_id: uuid,
         appointment_date: date,
         appointment_time: str,
-        exclude_id: int = None,
+        exclude_id: uuid = None,
     ) -> bool:
         """Check if appointment slot is available"""
         queryset = Appointment.objects.filter(
@@ -376,7 +377,7 @@ class AppointmentSelector:
     # Pagination methods needed by views
     @staticmethod
     def get_patient_appointments_with_pagination(
-        patient_id: int, page: int, limit: int, filters: Dict[str, Any]
+        patient_id: uuid, page: int, limit: int, filters: Dict[str, Any]
     ) -> Dict[str, Any]:
         """Get patient appointments with pagination and filters"""
         from django.core.paginator import Paginator
@@ -421,7 +422,7 @@ class AppointmentSelector:
 
     @staticmethod
     def get_doctor_appointments_with_pagination(
-        doctor_id: int, page: int, limit: int, filters: Dict[str, Any]
+        doctor_id: uuid, page: int, limit: int, filters: Dict[str, Any]
     ) -> Dict[str, Any]:
         """Get doctor appointments with pagination and filters"""
         from django.core.paginator import Paginator
@@ -513,7 +514,7 @@ class AppointmentSelector:
 
     @staticmethod
     def get_doctor_available_slots(
-        doctor_id: int, check_date: date
+        doctor_id: uuid, check_date: date
     ) -> Optional[Dict[str, Any]]:
         """Get doctor's available slots for a specific date"""
         try:
@@ -561,7 +562,7 @@ class AppointmentSelector:
 
     # Statistics methods for different user types
     @staticmethod
-    def get_patient_appointment_statistics(patient_id: int) -> Dict[str, Any]:
+    def get_patient_appointment_statistics(patient_id: uuid) -> Dict[str, Any]:
         """Get appointment statistics for a specific patient"""
         appointments = Appointment.objects.filter(patient_id=patient_id)
 
@@ -606,7 +607,7 @@ class AppointmentSelector:
         }
 
     @staticmethod
-    def get_doctor_appointment_statistics(doctor_id: int) -> Dict[str, Any]:
+    def get_doctor_appointment_statistics(doctor_id: uuid) -> Dict[str, Any]:
         """Get appointment statistics for a specific doctor"""
         appointments = Appointment.objects.filter(doctor_id=doctor_id)
 

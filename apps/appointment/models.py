@@ -1,8 +1,8 @@
-from core.models import BaseModel
 from django.db import models
 
 from apps.account.models import Doctor, Patient
 from core.enum import AppointmentStatus
+from core.models import BaseModel
 
 
 class Appointment(BaseModel):
