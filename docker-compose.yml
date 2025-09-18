@@ -1,16 +1,64 @@
-version: '3.8'
+version: "3.9"
 
 services:
-  app:
+  web:
+    build: .
     container_name: django_app
-    build:
-      context: .
-      dockerfile: Dockerfile
-    restart: unless-stopped
+    command: gunicorn config.wsgi:application --bind 0.0.0.0:8000 --workers 4 --threads 2 --timeout 120
     volumes:
-      - './media:/code/media:rw'
-      - '/var/log/django/logs:/code/logs:rw'
-      - '/srv/www/django/static:/srv/www/django/static:rwx'
-      - '/srv/www/django/media:/srv/www/django/media:rwx'
+      - .:/app
+      - static_volume:/app/static
+      - media_volume:/app/media
+    env_file: .env
     ports:
       - "8000:8000"
+    depends_on:
+      - db
+      - redis
+    restart: always
+
+  celery:
+    build: .
+    container_name: celery_worker
+    command: celery -A config.celery worker --loglevel=INFO
+    volumes:
+      - .:/app
+    env_file: .env
+    depends_on:
+      - db
+      - redis
+    restart: always
+
+  celery_beat:
+    build: .
+    container_name: celery_beat
+    command: celery -A config.celery beat --loglevel=INFO
+    volumes:
+      - .:/app
+    env_file: .env
+    depends_on:
+      - db
+      - redis
+    restart: always
+
+  db:
+    image: postgres:15
+    container_name: postgres_db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    env_file: .env
+    ports:
+      - "5432:5432"
+    restart: always
+
+  redis:
+    image: redis:7
+    container_name: redis_cache
+    ports:
+      - "6379:6379"
+    restart: always
+
+volumes:
+  postgres_data:
+  static_volume:
+  media_volume:

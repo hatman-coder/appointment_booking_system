@@ -1,28 +1,37 @@
-FROM nginx/unit:1.28.0-python3.10
+# Dockerfile
+FROM python:3.12-slim
 
+# Set environment variables
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 
-# Set working directory early
-WORKDIR /code
+# Set working directory
+WORKDIR /app
 
-# Copy and install dependencies
-COPY ./requirements.txt /code/
+# Install system dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    libpq-dev \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Upgrade pip and install wheel & setuptools
+RUN pip install --upgrade pip setuptools wheel
+
+# Copy requirements first to leverage Docker cache
+COPY requirements.txt .
+
+# Install Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy project files after dependencies are installed
-COPY . /code
+# Copy the rest of the project
+COPY . .
 
-# Create necessary directories (if required)
-RUN mkdir -p /srv/www/mas
+# Collect static files
+RUN python manage.py collectstatic --noinput
 
-# Copy static files into the server folder
-COPY static /srv/www/mas/
+# Expose port 8000
+EXPOSE 8000
 
-# Apply migrations and collect static files
-RUN python manage.py makemigrations && \
-    python manage.py migrate && \
-    python manage.py collectstatic --no-input
-
-# Use Gunicorn as the application server
-CMD ["gunicorn", "--bind", "0.0.0.0:8000", "core.wsgi:application"]
+# Default command
+CMD ["gunicorn", "config.wsgi:application", "--bind", "0.0.0.0:8000", "--workers", "4", "--threads", "2", "--timeout", "120"]

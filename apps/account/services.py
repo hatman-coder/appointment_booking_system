@@ -345,7 +345,7 @@ class UserServices:
 
                 # Create user type specific profiles
                 if user_type == UserType.DOCTOR.value:
-                    breakpoint()
+             
                     # Create doctor profile
                     doctor = Doctor.objects.create(
                         user=user,
@@ -354,7 +354,7 @@ class UserServices:
                         consultation_fee=doctor_data["consultation_fee"],
                         specialization=doctor_data["specialization"],
                     )
-                    breakpoint()
+             
                     # Create doctor schedules
                     for slot in doctor_data["available_timeslots"]:
                         DoctorSchedule.objects.create(

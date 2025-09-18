@@ -25,4 +25,4 @@ static/collect_static
 media/
 
 # logger file
-requests.log
+logs/

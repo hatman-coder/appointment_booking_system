@@ -54,6 +54,7 @@ INSTALLED_LIBRARIES = [
     "drf_spectacular",
     "rest_framework_simplejwt.token_blacklist",
     "django_ckeditor_5",
+    "django_celery_beat",
 ]
 
 
@@ -271,5 +272,63 @@ JAZZMIN_UI_TWEAKS = {
         "warning": "btn-warning",
         "danger": "btn-danger",
         "success": "btn-success",
+    },
+}
+
+
+CELERY_BROKER_URL = config("CELERY_BROKER_URL")
+CELERY_RESULT_BACKEND = config("CELERY_RESULT_BACKEND")
+CELERY_ACCEPT_CONTENT = config("CELERY_ACCEPT_CONTENT", default="json").split(",")
+CELERY_TASK_SERIALIZER = config("CELERY_TASK_SERIALIZER", default="json")
+CELERY_RESULT_SERIALIZER = config("CELERY_RESULT_SERIALIZER", default="json")
+CELERY_TIMEZONE = config("CELERY_TIMEZONE", default="Asia/Dhaka")
+
+# Django Cache
+CACHES = {
+    "default": {
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": config("DJANGO_CACHE_URL"),
+        "OPTIONS": {
+            "CLIENT_CLASS": "django_redis.client.DefaultClient",
+        },
+    }
+}
+
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "verbose": {
+            "format": "[{levelname}] {asctime} {name} - {message}",
+            "style": "{",
+        },
+        "simple": {
+            "format": "[{levelname}] {message}",
+            "style": "{",
+        },
+    },
+    "handlers": {
+        "console": {
+            "level": "DEBUG",
+            "class": "logging.StreamHandler",
+            "formatter": "verbose",
+        },
+        "file": {
+            "level": "INFO",
+            "class": "logging.FileHandler",
+            "filename": "logs/request.log",
+            "formatter": "verbose",
+        },
+    },
+    "root": {
+        "handlers": ["console", "file"],
+        "level": "INFO",
+    },
+    "loggers": {
+        "django": {
+            "handlers": ["console", "file"],
+            "level": "INFO",
+            "propagate": True,
+        },
     },
 }
