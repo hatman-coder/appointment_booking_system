@@ -30,7 +30,7 @@ profile_patterns = [
 doctor_patterns = [
     # Doctors List and Search
     path("doctors/", views.get_doctors_list, name="doctors_list"),
-    path("doctors/<int:doctor_id>/", views.get_doctor_detail, name="doctor_detail"),
+    path("doctors/<uuid:doctor_id>/", views.get_doctor_detail, name="doctor_detail"),
 ]
 
 # Admin URLs (Admin only endpoints)
@@ -56,7 +56,3 @@ v1_patterns = [
     # Version 1 API endpoints
     path("v1/", include(urlpatterns)),
 ]
-
-# Include media files serving in development
-if settings.DEBUG:
-    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

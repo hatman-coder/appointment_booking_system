@@ -1,4 +1,5 @@
 from typing import List, Optional, Dict, Any
+import uuid
 from django.db.models import QuerySet, Count
 from django.db.models import Q
 
@@ -14,7 +15,7 @@ class LocationSelector:
         return Division.objects.all().order_by("name")
 
     @staticmethod
-    def get_division_by_id(division_id: int) -> Optional[Division]:
+    def get_division_by_id(division_id: uuid) -> Optional[Division]:
         """Get division by ID"""
         try:
             return Division.objects.get(id=division_id)
@@ -30,12 +31,12 @@ class LocationSelector:
             return None
 
     @staticmethod
-    def get_districts_by_division(division_id: int) -> QuerySet:
+    def get_districts_by_division(division_id: uuid) -> QuerySet:
         """Get all districts under a division"""
         return District.objects.filter(division_id=division_id).order_by("name")
 
     @staticmethod
-    def get_district_by_id(district_id: int) -> Optional[District]:
+    def get_district_by_id(district_id: uuid) -> Optional[District]:
         """Get district by ID with division"""
         try:
             return District.objects.select_related("division").get(id=district_id)
@@ -43,12 +44,12 @@ class LocationSelector:
             return None
 
     @staticmethod
-    def get_thanas_by_district(district_id: int) -> QuerySet:
+    def get_thanas_by_district(district_id: uuid) -> QuerySet:
         """Get all thanas under a district"""
         return Thana.objects.filter(district_id=district_id).order_by("name")
 
     @staticmethod
-    def get_thana_by_id(thana_id: int) -> Optional[Thana]:
+    def get_thana_by_id(thana_id: uuid) -> Optional[Thana]:
         """Get thana by ID with district and division"""
         try:
             return Thana.objects.select_related("district__division").get(id=thana_id)
@@ -124,7 +125,7 @@ class LocationSelector:
         """Get divisions with their district counts, ordered by district count descending"""
         return list(
             Division.objects.annotate(district_count=Count("districts"))
-            .values("division__name", "district_count")
+            .values("name", "district_count")
             .order_by("-district_count")
         )
 
@@ -134,7 +135,7 @@ class LocationSelector:
         return list(
             District.objects.annotate(thana_count=Count("thanas"))
             .select_related("division")
-            .values("district__name", "district__division__name", "thana_count")
+            .values("name", "division__name", "thana_count")
             .order_by("-thana_count")
         )
 
@@ -166,7 +167,7 @@ class LocationSelector:
 
     @staticmethod
     def get_location_hierarchy(
-        thana_id: int = None, district_id: int = None, division_id: int = None
+        thana_id: uuid = None, district_id: uuid = None, division_id: uuid = None
     ) -> Optional[Dict[str, Any]]:
         """Get complete location hierarchy based on provided ID"""
         try:
@@ -229,7 +230,7 @@ class LocationSelector:
 
     @staticmethod
     def get_locations_with_pagination(
-        location_type: str, page: int = 1, limit: int = 20
+        location_type: str, page: uuid = 1, limit: uuid = 20
     ) -> Dict[str, Any]:
         """Get locations with pagination"""
         from django.core.paginator import Paginator
@@ -298,7 +299,7 @@ class LocationSelector:
 
     @staticmethod
     def validate_location_hierarchy(
-        division_id: int = None, district_id: int = None, thana_id: int = None
+        division_id: uuid = None, district_id: uuid = None, thana_id: uuid = None
     ) -> Dict[str, Any]:
         """Validate that the provided location IDs form a valid hierarchy"""
         try:
@@ -361,7 +362,7 @@ class LocationSelector:
 
     @staticmethod
     def get_nearby_locations(
-        location_type: str, location_id: int, radius_type: str = "same_parent"
+        location_type: str, location_id: uuid, radius_type: str = "same_parent"
     ) -> QuerySet:
         """Get nearby locations based on hierarchy"""
         try:

@@ -197,7 +197,7 @@ class AppointmentServices:
                 if not patient:
                     raise AppointmentValidationError("Patient not found")
 
-                if patient.user_type != User.PATIENT:
+                if patient.user_type != UserType.PATIENT.value:
                     raise AppointmentValidationError(
                         "Only patients can book appointments"
                     )
@@ -336,17 +336,17 @@ class AppointmentServices:
                 # Authorization checks
                 can_update = False
 
-                if updater.user_type == User.ADMIN:
+                if updater.user_type == UserType.ADMIN.value:
                     # Admin can update any appointment
                     can_update = True
                 elif (
-                    updater.user_type == User.DOCTOR
+                    updater.user_type == UserType.DOCTOR.value
                     and updater.id == appointment.doctor.id
                 ):
                     # Doctor can update their own appointments
                     can_update = True
                 elif (
-                    updater.user_type == User.PATIENT
+                    updater.user_type == UserType.PATIENT.value
                     and updater.id == appointment.patient.id
                 ):
                     # Patient can only cancel their own appointments
@@ -439,13 +439,13 @@ class AppointmentServices:
                     return {"success": False, "message": "User not found"}
 
                 can_reschedule = (
-                    user.user_type == User.ADMIN
+                    user.user_type == UserType.ADMIN.value
                     or (
-                        user.user_type == User.PATIENT
+                        user.user_type == UserType.PATIENT.value
                         and user.id == appointment.patient.id
                     )
                     or (
-                        user.user_type == User.DOCTOR
+                        user.user_type == UserType.DOCTOR.value
                         and user.id == appointment.doctor.id
                     )
                 )
@@ -705,7 +705,7 @@ class AppointmentServices:
         """
         try:
             patient = AppointmentSelector.get_user_by_id(patient_id)
-            if not patient or patient.user_type != User.PATIENT:
+            if not patient or patient.user_type != UserType.PATIENT.value:
                 return {"success": False, "message": "Patient not found"}
 
             # Get appointments

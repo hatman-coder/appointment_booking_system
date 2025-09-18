@@ -25,7 +25,10 @@ swagger_urlpatterns = [
     ),
 ]
 # Custom Apps Urls
-api_urlpatterns = []
+api_urlpatterns = [
+    path("account/", include("apps.account.urls")),
+    path("location/", include("apps.location.urls")),
+]
 
 # Django Ckeditor 5 urls
 ckeditor_urlpatterns = [path("ckeditor5/", include("django_ckeditor_5.urls"))]

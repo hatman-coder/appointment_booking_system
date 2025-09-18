@@ -41,7 +41,7 @@ class AppointmentSelector:
     def get_doctor_by_id(doctor_id: int) -> Optional[User]:
         """Get doctor user by ID - used by services for validation"""
         try:
-            return User.objects.get(id=doctor_id, user_type=User.DOCTOR)
+            return User.objects.get(id=doctor_id, user_type=UserType.DOCTOR.value)
         except User.DoesNotExist:
             return None
 
@@ -490,7 +490,7 @@ class AppointmentSelector:
     ) -> Optional[Dict[str, Any]]:
         """Get doctor's available slots for a specific date"""
         try:
-            doctor = User.objects.get(id=doctor_id, user_type=User.DOCTOR)
+            doctor = User.objects.get(id=doctor_id, user_type=UserType.DOCTOR.value)
         except User.DoesNotExist:
             return None
 

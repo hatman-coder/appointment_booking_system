@@ -26,7 +26,7 @@ class MonthlyReport(BaseModel):
 
 class AppointmentReminder(BaseModel):
     appointment = models.OneToOneField(
-        "appointments.Appointment", on_delete=models.CASCADE, related_name="reminder"
+        "appointment.Appointment", on_delete=models.CASCADE, related_name="reminder"
     )
     reminder_sent = models.BooleanField(default=False)
     sent_at = models.DateTimeField(null=True, blank=True)

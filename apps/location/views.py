@@ -1,13 +1,14 @@
 import json
 import logging
 
-from account.models import User
 from django.http import JsonResponse
 from django.utils import timezone
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
+
+from apps.account.models import User
 
 from .services import LocationServices
 
@@ -158,18 +159,6 @@ def get_location_hierarchy(request):
         district_id = request.GET.get("district_id")
         division_id = request.GET.get("division_id")
 
-        # Convert to int if provided
-        try:
-            thana_id = int(thana_id) if thana_id else None
-            district_id = int(district_id) if district_id else None
-            division_id = int(division_id) if division_id else None
-        except (ValueError, TypeError):
-            return standardize_response(
-                False,
-                "Invalid location ID format",
-                status_code=status.HTTP_400_BAD_REQUEST,
-            )
-
         result = LocationServices.get_location_hierarchy(
             thana_id=thana_id, district_id=district_id, division_id=division_id
         )
@@ -218,18 +207,6 @@ def validate_location_hierarchy(request):
             return standardize_response(
                 False,
                 "Division ID is required",
-                status_code=status.HTTP_400_BAD_REQUEST,
-            )
-
-        # Convert to int
-        try:
-            division_id = int(division_id)
-            district_id = int(district_id) if district_id else None
-            thana_id = int(thana_id) if thana_id else None
-        except (ValueError, TypeError):
-            return standardize_response(
-                False,
-                "Invalid location ID format",
                 status_code=status.HTTP_400_BAD_REQUEST,
             )
 
@@ -388,75 +365,6 @@ def get_location_statistics(request):
         )
 
 
-@api_view(["POST"])
-@permission_classes([IsAuthenticated])
-def bulk_validate_locations(request):
-    """
-    Bulk validate multiple location hierarchies
-    POST /api/locations/bulk-validate/
-
-    Expected payload:
-    {
-        "locations": [
-            {
-                "division_id": 1,
-                "district_id": 2,
-                "thana_id": 3
-            },
-            {
-                "division_id": 1,
-                "district_id": 3
-            }
-        ]
-    }
-    """
-    try:
-        locations_data = request.data.get("locations", [])
-
-        if not locations_data or not isinstance(locations_data, list):
-            return standardize_response(
-                False,
-                "Locations array is required",
-                status_code=status.HTTP_400_BAD_REQUEST,
-            )
-
-        if len(locations_data) > 100:  # Limit bulk operations
-            return standardize_response(
-                False,
-                "Maximum 100 locations allowed per bulk validation",
-                status_code=status.HTTP_400_BAD_REQUEST,
-            )
-
-        result = LocationServices.bulk_validate_locations(locations_data)
-
-        if result["success"]:
-            return standardize_response(
-                True,
-                result["message"],
-                {
-                    "total_processed": result["total_processed"],
-                    "valid_count": result["valid_count"],
-                    "invalid_count": result["invalid_count"],
-                    "validation_results": result["validation_results"],
-                },
-                status_code=status.HTTP_200_OK,
-            )
-        else:
-            return standardize_response(
-                False,
-                result["message"],
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            )
-
-    except Exception as e:
-        logger.error(f"Bulk validate locations API error: {str(e)}")
-        return standardize_response(
-            False,
-            "Failed to perform bulk location validation",
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-        )
-
-
 # Admin-only endpoints
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
@@ -469,7 +377,7 @@ def clear_location_cache(request):
     """
     try:
         # Check admin permission
-        if request.user.user_type != User.ADMIN:
+        if request.user.user_type != UserType.ADMIN.value:
             return standardize_response(
                 False,
                 "Admin privileges required",
@@ -499,21 +407,6 @@ def clear_location_cache(request):
         )
 
 
-@api_view(["GET"])
-@permission_classes([AllowAny])
-def health_check(request):
-    """
-    Health check endpoint for location service
-    GET /api/locations/health/
-    """
-    return standardize_response(
-        True,
-        "Location service is healthy",
-        {"timestamp": str(timezone.now())},
-        status_code=status.HTTP_200_OK,
-    )
-
-
 # Convenience endpoints for common use cases
 @api_view(["GET"])
 @permission_classes([AllowAny])
@@ -541,7 +434,6 @@ def get_districts_and_thanas(request, division_id):
             district_data = {
                 "id": district["id"],
                 "name": district["name"],
-                "name_en": district["name_en"],
                 "thanas": thanas_result["thanas"] if thanas_result["success"] else [],
             }
             districts_with_thanas.append(district_data)
@@ -582,18 +474,6 @@ def get_location_breadcrumb(request):
         thana_id = request.GET.get("thana_id")
         district_id = request.GET.get("district_id")
         division_id = request.GET.get("division_id")
-
-        # Convert to int if provided
-        try:
-            thana_id = int(thana_id) if thana_id else None
-            district_id = int(district_id) if district_id else None
-            division_id = int(division_id) if division_id else None
-        except (ValueError, TypeError):
-            return standardize_response(
-                False,
-                "Invalid location ID format",
-                status_code=status.HTTP_400_BAD_REQUEST,
-            )
 
         result = LocationServices.get_location_hierarchy(
             thana_id=thana_id, district_id=district_id, division_id=division_id

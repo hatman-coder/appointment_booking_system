@@ -15,9 +15,10 @@ import logging
 
 from .models import User
 from .selectors import UserSelector, DoctorSelector, PatientSelector
-from appointment.selectors import AppointmentSelector
+from apps.appointment.selectors import AppointmentSelector
 
-from location.selectors import LocationSelector
+from apps.location.selectors import LocationSelector
+from core.enum import UserType
 
 logger = logging.getLogger(__name__)
 
@@ -32,13 +33,13 @@ class UserServices:
     """Service class for user-related business operations"""
 
     @staticmethod
-    def validate_mobile_number(mobile: str) -> bool:
+    def validate_mobile_number(mobile_number: str) -> bool:
         """
-        Validate mobile number format (+88 and exactly 14 digits)
+        Validate mobile_number number format (+88 and exactly 14 digits)
         Example: +8801712345678
         """
         pattern = r"^\+88\d{11}$"
-        return bool(re.match(pattern, mobile))
+        return bool(re.match(pattern, mobile_number))
 
     @staticmethod
     def validate_password(password: str) -> Tuple[bool, List[str]]:
@@ -173,13 +174,13 @@ class UserServices:
             with transaction.atomic():
                 # Extract and validate required fields
                 email = user_data.get("email", "").strip().lower()
-                mobile = user_data.get("mobile", "").strip()
+                mobile_number = user_data.get("mobile_number", "").strip()
                 password = user_data.get("password", "")
                 user_type = user_data.get("user_type", "")
                 full_name = user_data.get("full_name", "").strip()
 
                 # Basic field validation
-                if not all([email, mobile, password, user_type, full_name]):
+                if not all([email, mobile_number, password, user_type, full_name]):
                     raise UserValidationError("All required fields must be provided")
 
                 # Email validation
@@ -188,15 +189,15 @@ class UserServices:
                 ):
                     raise UserValidationError("Invalid email format")
 
-                # Check unique email and mobile
+                # Check unique email and mobile_number
                 if UserSelector.get_user_by_email(email):
                     raise UserValidationError("Email already exists")
 
-                if UserSelector.get_user_by_mobile(mobile):
+                if UserSelector.get_user_by_mobile(mobile_number):
                     raise UserValidationError("Mobile number already exists")
 
                 # Mobile number validation
-                if not cls.validate_mobile_number(mobile):
+                if not cls.validate_mobile_number(mobile_number):
                     raise UserValidationError(
                         "Mobile number must be in +88 format with 11 digits"
                     )
@@ -207,7 +208,7 @@ class UserServices:
                     raise UserValidationError("; ".join(password_errors))
 
                 # User type validation
-                if user_type not in [choice[0] for choice in User.USER_TYPE_CHOICES]:
+                if user_type not in UserType.value_list():
                     raise UserValidationError("Invalid user type")
 
                 # Location validation
@@ -221,14 +222,14 @@ class UserServices:
 
                 if district_id:
                     district = LocationSelector.get_district_by_id(district_id)
-                    if not district or district.division_id != division_id:
+                    if not district or (str(district.division_id)) != division_id:
                         raise UserValidationError(
                             "Invalid district for selected division"
                         )
 
                 if thana_id:
                     thana = LocationSelector.get_thana_by_id(thana_id)
-                    if not thana or thana.district_id != district_id:
+                    if not thana or (str(thana.district_id) != district_id):
                         raise UserValidationError("Invalid thana for selected district")
 
                 # Profile image validation
@@ -241,7 +242,7 @@ class UserServices:
                         raise UserValidationError(image_error)
 
                 # Doctor-specific validation
-                if user_type == User.DOCTOR:
+                if user_type == UserType.DOCTOR.value:
                     license_number = user_data.get("license_number", "").strip()
                     experience_years = user_data.get("experience_years")
                     consultation_fee = user_data.get("consultation_fee")
@@ -275,13 +276,13 @@ class UserServices:
                         raise UserValidationError("; ".join(timeslot_errors))
 
                     # Check unique license number
-                    if DoctorSelector.get_doctor_by_license(license_number):
+                    if DoctorSelector.check_license_exists(license_number):
                         raise UserValidationError("License number already exists")
 
                 # Create user
                 user = User.objects.create(
                     email=email,
-                    mobile=mobile,
+                    mobile_number=mobile_number,
                     password=make_password(password),
                     user_type=user_type,
                     full_name=full_name,
@@ -299,7 +300,7 @@ class UserServices:
                         user.save(update_fields=["profile_image"])
 
                 # Handle doctor-specific fields
-                if user_type == User.DOCTOR:
+                if user_type == UserType.DOCTOR.value:
                     user.license_number = license_number
                     user.experience_years = experience_years
                     user.consultation_fee = consultation_fee
@@ -379,7 +380,7 @@ class UserServices:
                     "email": user.email,
                     "full_name": user.full_name,
                     "user_type": user.user_type,
-                    "mobile": user.mobile,
+                    "mobile_number": user.mobile_number,
                     "profile_image": (
                         user.profile_image.url if user.profile_image else None
                     ),
@@ -409,14 +410,14 @@ class UserServices:
                 # Fields that can be updated
                 updatable_fields = [
                     "full_name",
-                    "mobile",
+                    "mobile_number",
                     "division_id",
                     "district_id",
                     "thana_id",
                 ]
 
                 # Doctor-specific updatable fields
-                if user.user_type == User.DOCTOR:
+                if user.user_type == UserType.DOCTOR.value:
                     updatable_fields.extend(
                         ["experience_years", "consultation_fee", "available_timeslots"]
                     )
@@ -428,12 +429,14 @@ class UserServices:
                     if field not in updatable_fields:
                         continue
 
-                    if field == "mobile" and value:
+                    if field == "mobile_number" and value:
                         value = value.strip()
                         if not cls.validate_mobile_number(value):
-                            raise UserValidationError("Invalid mobile number format")
+                            raise UserValidationError(
+                                "Invalid mobile_number number format"
+                            )
 
-                        # Check if mobile is unique (excluding current user)
+                        # Check if mobile_number is unique (excluding current user)
                         existing_user = UserSelector.get_user_by_mobile(value)
                         if existing_user and existing_user.id != user_id:
                             raise UserValidationError("Mobile number already exists")
@@ -460,7 +463,7 @@ class UserServices:
                     elif field == "district_id" and value:
                         division_id = update_data.get("division_id", user.division_id)
                         district = LocationSelector.get_district_by_id(value)
-                        if not district or district.division_id != division_id:
+                        if not district or str(district.division_id) != division_id:
                             raise UserValidationError(
                                 "Invalid district for selected division"
                             )
@@ -468,7 +471,7 @@ class UserServices:
                     elif field == "thana_id" and value:
                         district_id = update_data.get("district_id", user.district_id)
                         thana = LocationSelector.get_thana_by_id(value)
-                        if not thana or thana.district_id != district_id:
+                        if not thana or str(thana.district_id) != district_id:
                             raise UserValidationError(
                                 "Invalid thana for selected district"
                             )
@@ -583,7 +586,7 @@ class UserServices:
                     "full_name": user.full_name,
                     "email": user.email,
                     "user_type": user.user_type,
-                    "mobile": user.mobile,
+                    "mobile_number": user.mobile_number,
                     "profile_image": (
                         user.profile_image.url if user.profile_image else None
                     ),
@@ -592,7 +595,7 @@ class UserServices:
             }
 
             # Add user-type specific data
-            if user.user_type == User.PATIENT:
+            if user.user_type == UserType.PATIENT.value:
                 # Add patient-specific dashboard data
                 dashboard_data["stats"] = {
                     "total_appointments": 0,  # Will be filled by appointment service
@@ -600,7 +603,7 @@ class UserServices:
                     "completed_appointments": 0,
                 }
 
-            elif user.user_type == User.DOCTOR:
+            elif user.user_type == UserType.DOCTOR.value:
                 # Add doctor-specific dashboard data
                 dashboard_data["doctor_info"] = {
                     "license_number": user.license_number,
@@ -614,7 +617,7 @@ class UserServices:
                     "this_month_earnings": 0,
                 }
 
-            elif user.user_type == User.ADMIN:
+            elif user.user_type == UserType.ADMIN.value:
                 # Add admin-specific dashboard data
                 dashboard_data["stats"] = {
                     "total_users": UserSelector.get_total_users_count(),

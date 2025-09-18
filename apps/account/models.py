@@ -1,21 +1,17 @@
 from core.models import BaseModel
 from django.contrib.auth.models import AbstractUser
 from django.db import models
+from core.enum import UserType
 
 from apps.location.models import District, Division, Thana
 
 
 class User(AbstractUser, BaseModel):
-    USER_TYPE_CHOICES = [
-        ("patient", "Patient"),
-        ("doctor", "Doctor"),
-        ("admin", "Admin"),
-    ]
 
     full_name = models.CharField(max_length=255)
     email = models.EmailField(unique=True)
     mobile_number = models.CharField(max_length=14, unique=True)
-    user_type = models.CharField(max_length=10, choices=USER_TYPE_CHOICES)
+    user_type = models.CharField(max_length=10, choices=UserType.choices())
     division = models.ForeignKey(
         Division, on_delete=models.SET_NULL, null=True, blank=True
     )

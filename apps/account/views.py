@@ -12,7 +12,7 @@ from rest_framework.response import Response
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework_simplejwt.tokens import RefreshToken
 
-from .selectors import UserSelectors
+from .selectors import UserSelector, DoctorSelector
 from .services import UserServices
 
 logger = logging.getLogger(__name__)
@@ -46,7 +46,7 @@ def register_user(request):
     Expected payload:
     {
         "email": "user@example.com",
-        "mobile": "+8801712345678",
+        "mobile_number": "+8801712345678",
         "password": "StrongPass123!",
         "full_name": "John Doe",
         "user_type": "patient",
@@ -88,7 +88,7 @@ def register_user(request):
                 )
 
         # Convert numeric fields
-        for field in ["division_id", "district_id", "thana_id", "experience_years"]:
+        for field in ["experience_years"]:
             if field in user_data and user_data[field]:
                 try:
                     user_data[field] = int(user_data[field])
@@ -247,7 +247,7 @@ def get_user_profile(request):
     GET /api/users/profile/
     """
     try:
-        user = UserSelectors.get_user_by_id(request.user.id)
+        user = UserSelector.get_user_by_id(request.user.id)
 
         if not user:
             return standardize_response(
@@ -259,7 +259,7 @@ def get_user_profile(request):
             "id": user.id,
             "email": user.email,
             "full_name": user.full_name,
-            "mobile": user.mobile,
+            "mobile_number": user.mobile_number,
             "user_type": user.user_type,
             "profile_image": user.profile_image.url if user.profile_image else None,
             "created_at": user.created_at,
@@ -318,7 +318,7 @@ def update_user_profile(request):
     Expected payload (any combination of these fields):
     {
         "full_name": "New Name",
-        "mobile": "+8801712345678",
+        "mobile_number": "+8801712345678",
         "division_id": 1,
         "district_id": 1,
         "thana_id": 1,
@@ -356,7 +356,7 @@ def update_user_profile(request):
                 )
 
         # Convert numeric fields
-        for field in ["division_id", "district_id", "thana_id", "experience_years"]:
+        for field in ["experience_years"]:
             if field in update_data and update_data[field]:
                 try:
                     update_data[field] = int(update_data[field])
@@ -572,14 +572,64 @@ def get_doctors_list(request):
                 pass
 
         # Get doctors with pagination
-        doctors_data = UserSelectors.get_doctors_with_pagination(
+        doctors_data = DoctorSelector.get_doctors_with_pagination(
             page=page, limit=limit, filters=filters
         )
+
+        # Serialize doctors data
+        serialized_data = {
+            "total": doctors_data["total"],
+            "pages": doctors_data["pages"],
+            "current_page": doctors_data["current_page"],
+            "doctors": [
+                {
+                    "id": doctor.id,
+                    "full_name": doctor.user.full_name,
+                    "email": doctor.user.email,
+                    "mobile_number": doctor.user.mobile_number,
+                    "profile_image": (
+                        doctor.user.profile_image.url
+                        if doctor.user.profile_image
+                        else None
+                    ),
+                    "license_number": doctor.license_number,
+                    "experience_years": doctor.experience_years,
+                    "consultation_fee": doctor.consultation_fee,
+                    "available_timeslots": DoctorSelector.get_doctor_available_slots(
+                        doctor.id
+                    ),
+                    "location": {
+                        "division": (
+                            {
+                                "id": doctor.user.division.id,
+                                "name": doctor.user.division.name,
+                            }
+                            if doctor.user.division
+                            else None
+                        ),
+                        "district": (
+                            {
+                                "id": doctor.user.district.id,
+                                "name": doctor.user.district.name,
+                            }
+                            if doctor.user.district
+                            else None
+                        ),
+                        "thana": (
+                            {"id": doctor.user.thana.id, "name": doctor.user.thana.name}
+                            if doctor.user.thana
+                            else None
+                        ),
+                    },
+                }
+                for doctor in doctors_data["doctors"]
+            ],
+        }
 
         return standardize_response(
             True,
             "Doctors list retrieved successfully",
-            doctors_data,
+            serialized_data,
             status_code=status.HTTP_200_OK,
         )
 
@@ -604,8 +654,7 @@ def get_doctor_detail(request, doctor_id):
     GET /api/users/doctors/{doctor_id}/
     """
     try:
-        doctor = UserSelectors.get_doctor_by_id(doctor_id)
-
+        doctor = DoctorSelector.get_doctor_by_id(doctor_id)
         if not doctor:
             return standardize_response(
                 False, "Doctor not found", status_code=status.HTTP_404_NOT_FOUND
@@ -614,29 +663,34 @@ def get_doctor_detail(request, doctor_id):
         # Prepare doctor detail data
         doctor_data = {
             "id": doctor.id,
-            "full_name": doctor.full_name,
-            "email": doctor.email,
-            "mobile": doctor.mobile,
-            "profile_image": doctor.profile_image.url if doctor.profile_image else None,
+            "full_name": doctor.user.full_name,
+            "email": doctor.user.email,
+            "mobile_number": doctor.user.mobile_number,
+            "profile_image": (
+                doctor.user.profile_image.url if doctor.user.profile_image else None
+            ),
             "license_number": doctor.license_number,
             "experience_years": doctor.experience_years,
             "consultation_fee": doctor.consultation_fee,
-            "available_timeslots": doctor.available_timeslots,
+            "available_timeslots": DoctorSelector.get_doctor_available_slots(doctor.id),
             "created_at": doctor.created_at,
         }
 
         # Add location data
-        if doctor.division:
+        if doctor.user.division:
             doctor_data["location"] = {
-                "division": {"id": doctor.division.id, "name": doctor.division.name},
+                "division": {
+                    "id": doctor.user.division.id,
+                    "name": doctor.user.division.name,
+                },
                 "district": (
-                    {"id": doctor.district.id, "name": doctor.district.name}
-                    if doctor.district
+                    {"id": doctor.user.district.id, "name": doctor.user.district.name}
+                    if doctor.user.district
                     else None
                 ),
                 "thana": (
-                    {"id": doctor.thana.id, "name": doctor.thana.name}
-                    if doctor.thana
+                    {"id": doctor.user.thana.id, "name": doctor.user.thana.name}
+                    if doctor.user.thana
                     else None
                 ),
             }
@@ -681,25 +735,48 @@ def get_users_list(request):
         search = request.GET.get("search", "").strip()
 
         # Build filters
-        filters = {}
-        if user_type and user_type in ["patient", "doctor", "admin"]:
-            filters["user_type"] = user_type
-        if search:
-            filters["search"] = search
+        filters = {
+            "user_type": (
+                user_type if user_type in ["patient", "doctor", "admin"] else None
+            ),
+            "search": search if search else None,
+        }
 
         # Get users with pagination
-        users_data = UserSelectors.get_users_with_pagination(
+        users_data = UserSelector.get_users_with_pagination(
             page=page, limit=limit, filters=filters
         )
+
+        # Serialize users data
+        serialized_data = {
+            "total": users_data["total"],
+            "pages": users_data["pages"],
+            "current_page": users_data["current_page"],
+            "users": [
+                {
+                    "id": user.id,
+                    "email": user.email,
+                    "full_name": user.full_name,
+                    "mobile_number": user.mobile_number,
+                    "user_type": user.user_type,
+                    "profile_image": (
+                        user.profile_image.url if user.profile_image else None
+                    ),
+                    "created_at": user.created_at,
+                    "last_login": user.last_login,
+                }
+                for user in users_data["users"]
+            ],
+        }
 
         return standardize_response(
             True,
             "Users list retrieved successfully",
-            users_data,
+            serialized_data,
             status_code=status.HTTP_200_OK,
         )
 
-    except ValueError as e:
+    except ValueError:
         return standardize_response(
             False, "Invalid query parameters", status_code=status.HTTP_400_BAD_REQUEST
         )

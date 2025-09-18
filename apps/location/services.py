@@ -38,8 +38,6 @@ class LocationServices:
                     {
                         "id": division.id,
                         "name": division.name,
-                        "name_en": division.name_en,
-                        "created_at": division.created_at,
                     }
                     for division in divisions_queryset
                 ]
@@ -79,10 +77,8 @@ class LocationServices:
                     {
                         "id": district.id,
                         "name": district.name,
-                        "name_en": district.name_en,
                         "division_id": district.division_id,
                         "division_name": district.division.name,
-                        "created_at": district.created_at,
                     }
                     for district in districts_queryset
                 ]
@@ -97,7 +93,6 @@ class LocationServices:
                 "division": {
                     "id": division.id,
                     "name": division.name,
-                    "name_en": division.name_en,
                 },
                 "districts": districts,
                 "total_count": len(districts),
@@ -129,12 +124,10 @@ class LocationServices:
                     {
                         "id": thana.id,
                         "name": thana.name,
-                        "name_en": thana.name_en,
                         "district_id": thana.district_id,
                         "district_name": thana.district.name,
                         "division_id": thana.district.division_id,
                         "division_name": thana.district.division.name,
-                        "created_at": thana.created_at,
                     }
                     for thana in thanas_queryset
                 ]
@@ -147,12 +140,10 @@ class LocationServices:
                 "division": {
                     "id": district.division.id,
                     "name": district.division.name,
-                    "name_en": district.division.name_en,
                 },
                 "district": {
                     "id": district.id,
                     "name": district.name,
-                    "name_en": district.name_en,
                 },
                 "thanas": thanas,
                 "total_count": len(thanas),
@@ -189,17 +180,14 @@ class LocationServices:
                     "division": {
                         "id": thana.district.division.id,
                         "name": thana.district.division.name,
-                        "name_en": thana.district.division.name_en,
                     },
                     "district": {
                         "id": thana.district.id,
                         "name": thana.district.name,
-                        "name_en": thana.district.name_en,
                     },
                     "thana": {
                         "id": thana.id,
                         "name": thana.name,
-                        "name_en": thana.name_en,
                     },
                 }
 
@@ -213,12 +201,10 @@ class LocationServices:
                     "division": {
                         "id": district.division.id,
                         "name": district.division.name,
-                        "name_en": district.division.name_en,
                     },
                     "district": {
                         "id": district.id,
                         "name": district.name,
-                        "name_en": district.name_en,
                     },
                 }
 
@@ -232,7 +218,6 @@ class LocationServices:
                     "division": {
                         "id": division.id,
                         "name": division.name,
-                        "name_en": division.name_en,
                     }
                 }
             else:
@@ -339,7 +324,6 @@ class LocationServices:
                     {
                         "id": div.id,
                         "name": div.name,
-                        "name_en": div.name_en,
                         "type": "division",
                     }
                     for div in divisions
@@ -351,7 +335,6 @@ class LocationServices:
                     {
                         "id": dist.id,
                         "name": dist.name,
-                        "name_en": dist.name_en,
                         "division_name": dist.division.name,
                         "type": "district",
                     }
@@ -364,7 +347,6 @@ class LocationServices:
                     {
                         "id": thana.id,
                         "name": thana.name,
-                        "name_en": thana.name_en,
                         "district_name": thana.district.name,
                         "division_name": thana.district.division.name,
                         "type": "thana",
@@ -428,15 +410,15 @@ class LocationServices:
                         ),
                         "top_divisions_by_districts": [
                             {
-                                "name": div["division__name"],
+                                "name": div["name"],
                                 "district_count": div["district_count"],
                             }
                             for div in division_district_counts[:5]
                         ],
                         "top_districts_by_thanas": [
                             {
-                                "name": dist["district__name"],
-                                "division_name": dist["district__division__name"],
+                                "name": dist["name"],
+                                "division_name": dist["division__name"],
                                 "thana_count": dist["thana_count"],
                             }
                             for dist in district_thana_counts[:5]
@@ -478,7 +460,6 @@ class LocationServices:
                     division_data = {
                         "id": division.id,
                         "name": division.name,
-                        "name_en": division.name_en,
                         "districts": [],
                     }
 
@@ -487,7 +468,6 @@ class LocationServices:
                         district_data = {
                             "id": district.id,
                             "name": district.name,
-                            "name_en": district.name_en,
                             "thanas": [],
                         }
 
@@ -496,7 +476,6 @@ class LocationServices:
                             {
                                 "id": thana.id,
                                 "name": thana.name,
-                                "name_en": thana.name_en,
                             }
                             for thana in thanas
                         ]
@@ -555,71 +534,3 @@ class LocationServices:
         except Exception as e:
             logger.error(f"Error clearing location cache: {str(e)}")
             return {"success": False, "message": "Failed to clear location cache"}
-
-    @staticmethod
-    def bulk_validate_locations(location_data: List[Dict[str, int]]) -> Dict[str, Any]:
-        """
-        Validate multiple location hierarchies at once
-        Useful for batch operations and data imports
-        """
-        try:
-            validation_results = []
-            valid_count = 0
-            invalid_count = 0
-
-            for i, location in enumerate(location_data):
-                division_id = location.get("division_id")
-                district_id = location.get("district_id")
-                thana_id = location.get("thana_id")
-
-                if not division_id:
-                    validation_results.append(
-                        {"index": i, "valid": False, "error": "Division ID is required"}
-                    )
-                    invalid_count += 1
-                    continue
-
-                validation_result = LocationServices.validate_location_hierarchy(
-                    division_id, district_id, thana_id
-                )
-
-                if validation_result["success"]:
-                    validation_results.append(
-                        {
-                            "index": i,
-                            "valid": True,
-                            "validated_locations": validation_result[
-                                "validated_locations"
-                            ],
-                        }
-                    )
-                    valid_count += 1
-                else:
-                    validation_results.append(
-                        {
-                            "index": i,
-                            "valid": False,
-                            "error": validation_result["message"],
-                        }
-                    )
-                    invalid_count += 1
-
-            logger.info(
-                f"Bulk location validation: {valid_count} valid, {invalid_count} invalid out of {len(location_data)}"
-            )
-
-            return {
-                "success": True,
-                "message": f"Bulk validation completed: {valid_count} valid, {invalid_count} invalid",
-                "total_processed": len(location_data),
-                "valid_count": valid_count,
-                "invalid_count": invalid_count,
-                "validation_results": validation_results,
-            }
-
-        except Exception as e:
-            logger.error(f"Error in bulk location validation: {str(e)}")
-            return {
-                "success": False,
-                "message": "Failed to perform bulk location validation",
-            }

@@ -52,7 +52,7 @@ def book_appointment(request):
     """
     try:
         # Only patients can book appointments
-        if request.user.user_type != User.PATIENT:
+        if request.user.user_type != UserType.PATIENT.value:
             return standardize_response(
                 False,
                 "Only patients can book appointments",
@@ -168,19 +168,19 @@ def get_user_appointments(request):
                 )
 
         # Get appointments based on user type
-        if request.user.user_type == User.PATIENT:
+        if request.user.user_type == UserType.PATIENT.value:
             appointments_data = (
                 AppointmentSelector.get_patient_appointments_with_pagination(
                     request.user.id, page, limit, filters
                 )
             )
-        elif request.user.user_type == User.DOCTOR:
+        elif request.user.user_type == UserType.DOCTOR.value:
             appointments_data = (
                 AppointmentSelector.get_doctor_appointments_with_pagination(
                     request.user.id, page, limit, filters
                 )
             )
-        elif request.user.user_type == User.ADMIN:
+        elif request.user.user_type == UserType.ADMIN.value:
             appointments_data = (
                 AppointmentSelector.get_all_appointments_with_pagination(
                     page, limit, filters
@@ -228,15 +228,15 @@ def get_appointment_detail(request, appointment_id):
 
         # Authorization check
         can_view = False
-        if request.user.user_type == User.ADMIN:
+        if request.user.user_type == UserType.ADMIN.value:
             can_view = True
         elif (
-            request.user.user_type == User.PATIENT
+            request.user.user_type == UserType.PATIENT.value
             and request.user.id == appointment.patient.id
         ):
             can_view = True
         elif (
-            request.user.user_type == User.DOCTOR
+            request.user.user_type == UserType.DOCTOR.value
             and request.user.id == appointment.doctor.id
         ):
             can_view = True
@@ -468,7 +468,10 @@ def get_doctor_schedule(request, doctor_id=None):
             # Requesting specific doctor's schedule
             target_doctor_id = doctor_id
             # Only allow patients and admins to view other doctors' schedules
-            if request.user.user_type == User.DOCTOR and request.user.id != doctor_id:
+            if (
+                request.user.user_type == UserType.DOCTOR.value
+                and request.user.id != doctor_id
+            ):
                 return standardize_response(
                     False,
                     "Cannot view other doctors' schedules",
@@ -476,7 +479,7 @@ def get_doctor_schedule(request, doctor_id=None):
                 )
         else:
             # Requesting own schedule (only for doctors)
-            if request.user.user_type != User.DOCTOR:
+            if request.user.user_type != UserType.DOCTOR.value:
                 return standardize_response(
                     False,
                     "Only doctors can view their own schedule without specifying doctor ID",
@@ -533,7 +536,10 @@ def get_patient_history(request, patient_id=None):
         if patient_id:
             # Requesting specific patient's history (Admin and Doctor can view)
             target_patient_id = patient_id
-            if request.user.user_type == User.PATIENT and request.user.id != patient_id:
+            if (
+                request.user.user_type == UserType.PATIENT.value
+                and request.user.id != patient_id
+            ):
                 return standardize_response(
                     False,
                     "Cannot view other patients' appointment history",
@@ -541,7 +547,7 @@ def get_patient_history(request, patient_id=None):
                 )
         else:
             # Requesting own history (only for patients)
-            if request.user.user_type != User.PATIENT:
+            if request.user.user_type != UserType.PATIENT.value:
                 return standardize_response(
                     False,
                     "Only patients can view their own history without specifying patient ID",
@@ -659,17 +665,17 @@ def get_appointment_statistics(request):
     - Admin: System-wide stats
     """
     try:
-        if request.user.user_type == User.PATIENT:
+        if request.user.user_type == UserType.PATIENT.value:
             # Patient statistics
             stats = AppointmentSelector.get_patient_appointment_statistics(
                 request.user.id
             )
-        elif request.user.user_type == User.DOCTOR:
+        elif request.user.user_type == UserType.DOCTOR.value:
             # Doctor statistics
             stats = AppointmentSelector.get_doctor_appointment_statistics(
                 request.user.id
             )
-        elif request.user.user_type == User.ADMIN:
+        elif request.user.user_type == UserType.ADMIN.value:
             # Admin statistics
             stats = AppointmentSelector.get_admin_appointment_statistics()
         else:
@@ -709,7 +715,7 @@ def get_all_appointments_admin(request):
     """
     try:
         # Check admin permission
-        if request.user.user_type != User.ADMIN:
+        if request.user.user_type != UserType.ADMIN.value:
             return standardize_response(
                 False,
                 "Admin privileges required",

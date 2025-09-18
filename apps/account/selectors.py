@@ -1,8 +1,11 @@
+from datetime import datetime, timedelta
 from typing import Optional
 
 from django.db.models import Avg, Count, Q, QuerySet
 
 from .models import Doctor, DoctorSchedule, Patient, User
+from apps.appointment.models import Appointment
+from typing import List, Dict
 
 
 class UserSelector:
@@ -90,6 +93,39 @@ class UserSelector:
         return queryset.exists()
 
     @staticmethod
+    def get_users_with_pagination(
+        page: int = 0, limit: int = 10, filters: dict = None
+    ) -> dict:
+        """Get paginated list of users with their location details"""
+
+        queryset = User.objects.select_related("division", "district", "thana")
+
+        # Apply filters
+        if filters:
+            if "user_type" in filters and filters["user_type"]:
+                queryset = queryset.filter(user_type=filters["user_type"])
+            if "search" in filters and filters["search"]:
+                search = filters["search"]
+                queryset = queryset.filter(
+                    Q(full_name__icontains=search) | Q(email__icontains=search)
+                )
+
+        total = queryset.count()
+        pages = (total + limit - 1) // limit
+        current_page = max(page, 1)
+        start = (current_page - 1) * limit
+        end = start + limit
+
+        users = queryset.order_by("full_name")[start:end]
+
+        return {
+            "total": total,
+            "pages": pages,
+            "current_page": current_page,
+            "users": users,
+        }
+
+    @staticmethod
     def get_total_users_count() -> int:
         return User.objects.all().count()
 
@@ -125,6 +161,95 @@ class DoctorSelector:
             .prefetch_related("schedules")
             .order_by("user__full_name")
         )
+
+    @staticmethod
+    def get_doctor_available_slots(
+        doctor_id: int, date: datetime.date = datetime.now(), duration: int = 30
+    ) -> List[Dict]:
+        """
+        Get available time slots for a doctor on a specific date, excluding booked slots
+        """
+        # Get day of week (0 = Monday, 6 = Sunday)
+        day_of_week = date.weekday()
+
+        # Get doctor's schedule for that day
+        schedule = DoctorSchedule.objects.filter(
+            doctor_id=doctor_id, day_of_week=day_of_week, is_active=True
+        ).first()
+
+        if not schedule:
+            return []
+
+        # Generate all possible time slots
+        all_slots = []
+        current_time = schedule.start_time
+        end_time = schedule.end_time
+
+        while current_time < end_time:
+            slot_end = (
+                datetime.combine(datetime.today(), current_time)
+                + timedelta(minutes=duration)
+            ).time()
+
+            if slot_end <= end_time:
+                all_slots.append(
+                    {
+                        "start": current_time,
+                        "end": slot_end,
+                        "formatted_start": current_time.strftime("%I:%M %p"),
+                        "formatted_end": slot_end.strftime("%I:%M %p"),
+                    }
+                )
+
+            current_time = slot_end
+
+        # Get booked appointments for the day
+        booked_appointments = Appointment.objects.filter(
+            doctor_id=doctor_id, appointment_date=date
+        ).values_list("appointment_time", flat=True)
+
+        # Filter out booked slots
+        available_slots = [
+            slot for slot in all_slots if slot["start"] not in booked_appointments
+        ]
+
+        return available_slots
+
+    @staticmethod
+    def get_doctors_with_pagination(
+        page: int = 0, limit: int = 10, filters: dict = None
+    ) -> dict:
+        """Get paginated list of doctors with their user and location details"""
+        queryset = Doctor.objects.select_related(
+            "user__division", "user__district", "user__thana"
+        ).prefetch_related("schedules")
+
+        # Apply filters
+        if filters:
+            if "specialization" in filters and filters["specialization"]:
+                queryset = queryset.filter(specialization=filters["specialization"])
+            if "search" in filters and filters["search"]:
+                search = filters["search"]
+                queryset = queryset.filter(
+                    Q(user__full_name__icontains=search)
+                    | Q(specialization__icontains=search)
+                    | Q(license_number__icontains=search)
+                )
+
+        total = queryset.count()
+        pages = (total + limit - 1) // limit
+        current_page = max(page, 1)
+        start = (current_page - 1) * limit
+        end = start + limit
+
+        doctors = queryset.order_by("user__full_name")[start:end]
+
+        return {
+            "total": total,
+            "pages": pages,
+            "current_page": current_page,
+            "doctors": doctors,
+        }
 
     @staticmethod
     def get_available_doctors() -> QuerySet:

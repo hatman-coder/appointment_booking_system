@@ -41,7 +41,12 @@ else:
 
 
 # Custom and third-party app configurations
-CUSTOM_APPS = []  # Add your custom apps here
+CUSTOM_APPS = [
+    "apps.account",
+    "apps.location",
+    "apps.appointment",
+    "apps.report",
+]  # Add your custom apps here
 
 INSTALLED_LIBRARIES = [
     "rest_framework",
@@ -132,7 +137,7 @@ AUTH_PASSWORD_VALIDATORS = [
 REST_FRAMEWORK = {
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
     "DEFAULT_AUTHENTICATION_CLASSES": (
-        "rest_framework.authentication.BasicAuthentication",
+        # "rest_framework.authentication.BasicAuthentication",
         "rest_framework_simplejwt.authentication.JWTAuthentication",
     ),
 }
@@ -155,7 +160,7 @@ MEDIA_ROOT = BASE_DIR / "media"
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # Custom User model
-# AUTH_USER_MODEL = ""
+AUTH_USER_MODEL = "account.User"
 
 # File upload settings
 DATA_UPLOAD_MAX_MEMORY_SIZE = 1 * 1024 * 1024 * 1024  # 1 GB
