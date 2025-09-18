@@ -22,6 +22,7 @@ __pycache__/
 static/collect_static
 
 # Media files
+media/
 
 # logger file
 requests.log
